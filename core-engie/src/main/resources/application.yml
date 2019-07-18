@@ -1,0 +1,9 @@
+#======================================#
+#========== Server settings ===========#
+#======================================#
+server:
+  port: 5555
+  servlet:
+    context-path: /
+  tomcat:
+    uri-encoding: UTF-8

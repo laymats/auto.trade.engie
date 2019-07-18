@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <script src="https://cdn.staticfile.org/jquery/1.10.2/jquery.min.js"></script>
+    <style>
+        .show-order {
+
+        }
+    </style>
+</head>
+<body>
+<div class="user">
+    价格：<input name="price">
+    数量：<input name="amount">
+    <input type="button" value="买" onclick="tradeEngie.place(true)">
+    <input type="button" value="卖" onclick="tradeEngie.place(false)">
+</div>
+<div class="show-status">
+    <div id="highPirce">最高价：0</div>
+    <div id="lowPrice">最低价：0</div>
+</div>
+<div class="show-order"></div>
+<script>
+    var tradeEngie = {
+        start: function () {
+            setInterval(this.tradeData, 500);
+        },
+        tradeData: function () {
+            $.get('trade/order_list', function (res) {
+                $('.show-order').html('');
+                for (var i = 0; i < res.trades.length; i++) {
+                    var trade = res.trades[i];
+                    $('.show-order').append('<li>' +
+                        ' 交易单价:' + trade.tradePrice +
+                        ' 交易数量:' + trade.tradeCount +
+                        ' 交易金额:' + trade.orderAmount +
+                        ' 交易时间:' + trade.orderTime.replace("T", " ").replace("+0000", "") + ' </li>');
+                }
+                $('#highPirce').html('最高价：' + res.status.highPrice);
+                $('#lowPrice').html('最低价：' + res.status.lowPrice);
+            });
+        },
+        place: function (buy) {
+            var userid = parseInt(Math.random() * 1000000);
+            var price = $('[name="price"]').val();
+            var amount = $('[name="amount"]').val();
+            $.get('trade/new', {price: price, count: amount, buy: buy, userId: userid}, function (res) {
+                $('.show-order').append("");
+            });
+        }
+    };
+    tradeEngie.start();
+</script>
+</body>
+</html>
