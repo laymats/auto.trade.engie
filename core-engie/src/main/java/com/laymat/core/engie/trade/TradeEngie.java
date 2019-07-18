@@ -2,6 +2,9 @@ package com.laymat.core.engie.trade;
 
 import com.laymat.core.engie.trade.order.TradeOrder;
 import com.laymat.core.engie.trade.order.TradeResult;
+import com.laymat.core.engie.trade.subscribe.TradeMarketSubscribe;
+import com.laymat.core.engie.trade.subscribe.TradeStatus;
+import jdk.jfr.Event;
 
 import java.util.List;
 
@@ -14,4 +17,5 @@ public interface TradeEngie {
     List<TradeOrder>  getSellers();
     TradeResult[] getTradeResults();
     TradeStatus getTradeStatus();
+    void addStatusEvent(TradeMarketSubscribe subscribe);
 }

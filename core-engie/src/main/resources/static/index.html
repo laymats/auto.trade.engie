@@ -4,43 +4,172 @@
     <meta charset="UTF-8">
     <title>Title</title>
     <script src="https://cdn.staticfile.org/jquery/1.10.2/jquery.min.js"></script>
+    <link rel="stylesheet" href="https://cdn.staticfile.org/twitter-bootstrap/3.3.7/css/bootstrap.min.css">
     <style>
         .show-order {
 
         }
+
+        li {
+            text-decoration: none;
+            list-style: none;
+        }
+
+        .trade-market {
+            width: 1000px;
+            height: auto;
+            margin: 100px auto;
+        }
+
+        .left-buyer {
+            width: 300px;
+            height: auto;
+            float: left;
+        }
+
+        .right-seller {
+            width: 300px;
+            height: auto;
+            float: left;
+            margin-left: 20px;
+        }
+
+        .left-buyer, .right-seller li {
+            padding-left: 20px;
+        }
     </style>
 </head>
 <body>
-<div class="user">
-    价格：<input name="price">
-    数量：<input name="amount">
-    <input type="button" value="买" onclick="tradeEngie.place(true)">
-    <input type="button" value="卖" onclick="tradeEngie.place(false)">
+
+
+<div class="contentContainer trade-market">
+    <div class="user">
+        价格：<input name="price">
+        数量：<input name="amount">
+        <input type="button" value="买" onclick="tradeEngie.place(true)">
+        <input type="button" value="卖" onclick="tradeEngie.place(false)">
+    </div>
+    <div class="show-status">
+        <div id="highPirce">最高价：0</div>
+        <div id="lowPrice">最低价：0</div>
+    </div>
+
+    <div class="left-buyer">
+        <div class="panel panel-default">
+            <div class="panel-heading">
+                <h3 class="panel-title">
+                    buyer
+                </h3>
+            </div>
+            <div class="panel-body">
+                <table class="table">
+                    <thead>
+                    <tr>
+                        <th>买价</th>
+                        <th>数量</th>
+                        <th>总额</th>
+                    </tr>
+                    </thead>
+                    <tbody id="buyer_list">
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    <div class="right-seller">
+        <div class="panel panel-default">
+            <div class="panel-heading">
+                <h3 class="panel-title">
+                    seller
+                </h3>
+            </div>
+            <div class="panel-body">
+                <table class="table">
+                    <thead>
+                    <tr>
+                        <th>卖价</th>
+                        <th>数量</th>
+                        <th>总额</th>
+                    </tr>
+                    </thead>
+                    <tbody id="seller_list">
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="right-seller">
+        <div class="panel panel-default">
+            <div class="panel-heading">
+                <h3 class="panel-title">
+                    seller
+                </h3>
+            </div>
+            <div class="panel-body">
+                <table class="table">
+                    <thead>
+                    <tr>
+                        <th>时间</th>
+                        <th>价格</th>
+                        <th>数量</th>
+                        <th>总额</th>
+                    </tr>
+                    </thead>
+                    <tbody id="trade_list">
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
 </div>
-<div class="show-status">
-    <div id="highPirce">最高价：0</div>
-    <div id="lowPrice">最低价：0</div>
-</div>
-<div class="show-order"></div>
 <script>
     var tradeEngie = {
         start: function () {
-            setInterval(this.tradeData, 500);
+            this.tradeMarket();
         },
-        tradeData: function () {
-            $.get('trade/order_list', function (res) {
-                $('.show-order').html('');
-                for (var i = 0; i < res.trades.length; i++) {
-                    var trade = res.trades[i];
-                    $('.show-order').append('<li>' +
-                        ' 交易单价:' + trade.tradePrice +
-                        ' 交易数量:' + trade.tradeCount +
-                        ' 交易金额:' + trade.orderAmount +
-                        ' 交易时间:' + trade.orderTime.replace("T", " ").replace("+0000", "") + ' </li>');
-                }
-                $('#highPirce').html('最高价：' + res.status.highPrice);
-                $('#lowPrice').html('最低价：' + res.status.lowPrice);
-            });
+        tradeMarket: function () {
+            var _this = this;
+            var ws = new WebSocket("ws://" + location.host + "/trade/market/123");
+            ws.onopen = function (ev) {
+                console.log('open status ' + ev);
+            }
+            ws.onmessage = function (ev) {
+                //console.log('ws message ' + ev.data);
+                _this.tradeData(JSON.parse(ev.data))
+            }
+        },
+        tradeData: function (res) {
+            $('#trade_list').html('');
+            $('#buyer_list').html('');
+            $('#seller_list').html('');
+            for (var i = 0; i < res.trades.length; i++) {
+                var trade = res.trades[i];
+                $('#trade_list').append('<tr>' +
+                    '<td>' + trade.orderTime.split(" ")[1] + '</td>' +
+                    '<td>' + trade.tradePrice + '</td>' +
+                    '<td>' + trade.tradeCount + '</td>' +
+                    '<td>' + trade.orderAmount + '</td>' +
+                    '</tr>');
+            }
+            for (var i = 0; i < res.buyer.length; i++) {
+                var buyer = res.buyer[i];
+                $('#buyer_list').append('<tr>' +
+                    '<td>' + buyer.tradeAmount + '</td>' +
+                    '<td>' + buyer.tradeCount + '</td>' +
+                    '<td>' + buyer.totalAmount + '</td>' +
+                    '</tr>');
+            }
+            for (var i = 0; i < res.seller.length; i++) {
+                var seller = res.seller[i];
+                $('#seller_list').append('<tr>' +
+                    '<td>' + seller.tradeAmount + '</td>' +
+                    '<td>' + seller.tradeCount + '</td>' +
+                    '<td>' + seller.totalAmount + '</td>' +
+                    '</tr>');
+            }
+            $('#highPirce').html('最高价：' + res.highPrice);
+            $('#lowPrice').html('最低价：' + res.lowPrice);
         },
         place: function (buy) {
             var userid = parseInt(Math.random() * 1000000);

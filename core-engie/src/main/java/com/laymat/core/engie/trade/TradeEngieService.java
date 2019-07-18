@@ -1,9 +1,10 @@
 package com.laymat.core.engie.trade;
 
-import cn.hutool.core.util.IdUtil;
 import cn.hutool.core.util.RandomUtil;
 import com.laymat.core.engie.trade.order.TradeOrder;
 import com.laymat.core.engie.trade.order.TradeResult;
+import com.laymat.core.engie.trade.subscribe.TradeMarketSubscribe;
+import com.laymat.core.engie.trade.subscribe.TradeStatus;
 import lombok.Data;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -24,11 +25,26 @@ public class TradeEngieService implements TradeEngie {
     private static volatile Object tradeEngieServiceLock = new Object();
     private static volatile TradeEngieService tradeEngieService = null;
     /**
-     * 系统状态相关
+     * 系统运行状态
      */
     private static volatile AtomicInteger RUN_STATUS = new AtomicInteger(0);
-    private static final AtomicInteger RUN_STATUS_CODE = new AtomicInteger(1);
-    private static final AtomicInteger STOP_STATUS_CODE = new AtomicInteger(0);
+    /**
+     * 系统运行中
+     */
+    private static final AtomicInteger SYSTEM_RUNNING = new AtomicInteger(1);
+    /**
+     * 系统停止中
+     */
+    private static final AtomicInteger SYSTEM_STOPING = new AtomicInteger(2);
+    /**
+     * 系统已停止
+     */
+    private static final AtomicInteger SYSTEM_STOP = new AtomicInteger(0);
+
+    private static volatile AtomicInteger TRADE_RUN_STATUS = new AtomicInteger(0);
+    private static final AtomicInteger TRADE_RUNNING = new AtomicInteger(10);
+    private static final AtomicInteger TRADE_WAITING = new AtomicInteger(11);
+    private static final AtomicInteger TRADE_STOP = new AtomicInteger(0);
     /**
      * 系统核心数据相关
      */
@@ -47,6 +63,8 @@ public class TradeEngieService implements TradeEngie {
     private static volatile TradeResult[] tradeResults = new TradeResult[50];
     private static volatile BigDecimal finalHighPrice = BigDecimal.ZERO;
     private static volatile BigDecimal finalLowestPrice = BigDecimal.ZERO;
+
+    private TradeMarketSubscribe tradeMarketSubscribe;
 
     private TradeEngieService() {
 
@@ -157,15 +175,18 @@ public class TradeEngieService implements TradeEngie {
     }
 
     void doTradeOrder() {
+        TRADE_RUN_STATUS.set(TRADE_RUNNING.get());
         //撮合双方交易
         var buyTrade = getHighTradeOrder();
         if (buyTrade == null) {
+            TRADE_RUN_STATUS.set(TRADE_WAITING.get());
             logger.info("撮合完毕.");
             return;
         }
 
         var sellTrade = getlowestTradeOrder(buyTrade.getOrder().getTradeAmount());
         if (sellTrade == null) {
+            TRADE_RUN_STATUS.set(TRADE_WAITING.get());
             logger.info("撮合完毕.");
             return;
         }
@@ -358,8 +379,23 @@ public class TradeEngieService implements TradeEngie {
         }
     }
 
+    void makeTradeMarket() {
+        if (tradeMarketSubscribe != null) {
+
+            var status = new TradeStatus();
+            status.setHighPrice(finalHighPrice);
+            status.setLowPrice(finalLowestPrice);
+            status.setBuyer(buyerOrders);
+            status.setSeller(sellerOrder);
+            status.setTrades(getTradeResults());
+
+            tradeMarketSubscribe.doData(status);
+        }
+    }
+
     void start() {
         new Thread(() -> {
+            logger.info("核心交易服务已启动.");
             while (true) {
                 try {
                     this.makeOrderHandle();
@@ -370,6 +406,7 @@ public class TradeEngieService implements TradeEngie {
             }
         }).start();
         new Thread(() -> {
+            logger.info("交易市场信息处理服务已启动.");
             while (true) {
                 try {
                     this.makeOrderShow();
@@ -379,15 +416,26 @@ public class TradeEngieService implements TradeEngie {
                 }
             }
         }).start();
+        new Thread(() -> {
+            logger.info("交易市场信息推送已启动.");
+            while (true) {
+                try {
+                    this.makeTradeMarket();
+                    TimeUnit.MILLISECONDS.sleep(300);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+        }).start();
     }
 
     @Override
     public boolean startEngie() {
-        if (RUN_STATUS.intValue() == STOP_STATUS_CODE.intValue()) {
+        if (RUN_STATUS.get() == SYSTEM_STOP.get()) {
             logger.info("撮合引擎启动中...");
-            RUN_STATUS.set(1);
+            RUN_STATUS.set(SYSTEM_RUNNING.get());
             this.start();
-            logger.info("撮合引擎启动成功");
+            logger.info("撮合引擎启动成功.");
             return true;
         } else {
             return false;
@@ -396,8 +444,18 @@ public class TradeEngieService implements TradeEngie {
 
     @Override
     public boolean stopEngie() {
-        if (RUN_STATUS.intValue() == RUN_STATUS_CODE.intValue()) {
-            RUN_STATUS.set(0);
+        if (RUN_STATUS.get() == SYSTEM_RUNNING.get()) {
+            RUN_STATUS.set(SYSTEM_STOPING.get());
+            logger.info("撮合引擎停止中...");
+
+            while (TRADE_RUN_STATUS.get() != TRADE_STOP.get()) {
+                try {
+                    TimeUnit.SECONDS.sleep(1);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+            logger.info("撮合引擎停止成功.");
             return true;
         } else {
             return false;
@@ -406,14 +464,24 @@ public class TradeEngieService implements TradeEngie {
 
     @Override
     public boolean placeOrder(TradeOrder order) {
-        tradeOrderMakeQueue.add(order);
-        return true;
+        if (RUN_STATUS.get() == SYSTEM_RUNNING.get()) {
+            order.setTotalAmount(order.getTradeAmount().multiply(order.getTradeCount()));
+            tradeOrderMakeQueue.add(order);
+            return true;
+        } else {
+            return false;
+        }
     }
 
     @Override
     public boolean cancelOrder(TradeOrder order) {
-        tradeOrderCancelQueue.add(order);
-        return true;
+        if (RUN_STATUS.get() == SYSTEM_RUNNING.get()) {
+            order.setTotalAmount(order.getTradeAmount().multiply(order.getTradeCount()));
+            tradeOrderCancelQueue.add(order);
+            return false;
+        } else {
+            return true;
+        }
     }
 
     @Override
@@ -443,5 +511,10 @@ public class TradeEngieService implements TradeEngie {
         status.setHighPrice(finalHighPrice);
         status.setLowPrice(finalLowestPrice);
         return status;
+    }
+
+    @Override
+    public void addStatusEvent(TradeMarketSubscribe subscribe) {
+        this.tradeMarketSubscribe = subscribe;
     }
 }

@@ -35,6 +35,10 @@ public class TradeOrder implements Comparable {
      * 是否市价单
      */
     private boolean marketOrder;
+    /**
+     * 订单总额
+     */
+    private BigDecimal totalAmount;
 
     @Override
     public int compareTo(Object o) {
