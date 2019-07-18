@@ -14,8 +14,21 @@
     <name>core-engie</name>
     <description>Demo project for Spring Boot</description>
 
+    <packaging>jar</packaging>
+
+    <distributionManagement>
+        <repository>
+            <id>proficio-repository</id>
+            <name>Proficio Repository</name>
+            <url>file://${basedir}/target/deploy</url>
+        </repository>
+    </distributionManagement>
+
+    <!-- 添加编译配置，防止出现 [不再支持目标选项 5。请使用 7 或更高版本。] 提示-->
     <properties>
-        <java.version>11</java.version>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <maven.compiler.source>11</maven.compiler.source>
+        <maven.compiler.target>11</maven.compiler.target>
     </properties>
 
     <dependencies>

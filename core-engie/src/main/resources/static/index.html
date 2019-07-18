@@ -103,7 +103,7 @@
         <div class="panel panel-default">
             <div class="panel-heading">
                 <h3 class="panel-title">
-                    seller
+                    trade history
                 </h3>
             </div>
             <div class="panel-body">
@@ -132,11 +132,13 @@
             var _this = this;
             var ws = new WebSocket("ws://" + location.host + "/trade/market/123");
             ws.onopen = function (ev) {
-                console.log('open status ' + ev);
+                console.log('start trade market ...');
             }
             ws.onmessage = function (ev) {
                 //console.log('ws message ' + ev.data);
-                _this.tradeData(JSON.parse(ev.data))
+                if(!JSON.parse(ev.data).status) {
+                    _this.tradeData(JSON.parse(ev.data))
+                }
             }
         },
         tradeData: function (res) {

@@ -51,7 +51,7 @@ public class TradeMarketService {
         coreTradeMarketServices.add(this);
         addOnlineCount();
 
-        log.info("有新窗口开始监听:{}，当前在线人数为", session, getOnlineCount());
+        log.info("有新窗口开始监听:{}，当前在线人数为{}", session, getOnlineCount());
         try {
             sendMessage("{\"status\":\"success\"}");
         } catch (IOException e) {

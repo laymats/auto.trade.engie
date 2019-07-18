@@ -334,49 +334,72 @@ public class TradeEngieService implements TradeEngie {
         this.doTradeOrder();
     }
 
+    boolean checkBuyerExsit(TradeOrder order) {
+        for (var buy : buyerOrders) {
+            if (order.getTradeId().equals(buy.getTradeId())) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     void makeOrderShow() {
-        if (buyerOrders.size() < 50) {
-            buyerOrders = new LinkedList<>();
-            for (var i = 0; i < 50; i++) {
-                if (buyerList.size() > i) {
-                    buyerOrders.add(buyerList.get(i));
-                }
-            }
-        }
-        if (sellerOrder.size() < 50) {
-            sellerOrder = new LinkedList<>();
-            for (var i = 0; i < 50; i++) {
-                if (sellerList.size() > i) {
-                    sellerOrder.add(sellerList.get(i));
-                }
-            }
-        }
 
         for (var buyer : buyerList) {
-            for (var i = 0; i < buyerOrders.size(); i++) {
-                if (buyerOrders.get(i) != null) {
-                    if (buyerOrders.get(i).getTradeAmount().compareTo(buyer.getTradeAmount()) == -1) {
-                        buyerOrders.set(i - 1 < 0 ? 0 : i - 1, buyerOrders.get(i));
-                        buyerOrders.set(i, buyer);
+            var newUpdate = false;
+            if (buyerOrders.size() < 50) {
+                if (!checkBuyerExsit(buyer)) {
+                    buyerOrders.add(buyer);
+                    newUpdate = true;
+                }
+            } else {
+                //添加前50
+                for (var i = 0; i < buyerOrders.size(); i++) {
+                    if (buyerOrders.get(i) != null) {
+                        var compareResult = buyerOrders.get(i).getTradeAmount().compareTo(buyer.getTradeAmount());
+                        if (compareResult == -1) {
+                            buyerOrders.set(i - 1 < 0 ? 0 : i - 1, buyerOrders.get(i));
+                            buyerOrders.set(i, buyer);
+                            newUpdate = true;
+                        }
                     }
                 }
             }
-        }
-        for (var seller : sellerList) {
-            for (var i = 0; i < sellerOrder.size(); i++) {
-                if (sellerOrder.get(i) != null) {
-                    if (sellerOrder.get(i).getTradeAmount().compareTo(seller.getTradeAmount()) == 1) {
-                        var index = i + 1 > 50 ? 49 : i + 1;
-                        if (sellerOrder.size() < index) {
-                            sellerOrder.add(seller);
-                        } else {
-                            sellerOrder.set(index, sellerOrder.get(i));
-                            sellerOrder.set(i, seller);
+
+            if(newUpdate) {
+                //合并价格相同
+                var tempList = new LinkedList<TradeOrder>();
+                for (var tempBuyer : buyerOrders) {
+                    tempList.add(tempBuyer);
+                }
+                for (var i = 0; i < buyerOrders.size(); i++) {
+                    for (var j = 0; j < tempList.size(); j++) {
+                        var compareResult = buyerOrders.get(i).getTradeAmount().compareTo(tempList.get(j).getTradeAmount());
+                        if (compareResult == 0 && buyerOrders.get(i).getUserId().compareTo(tempList.get(j).getUserId()) != 0) {
+                            var oldOrder = buyerOrders.get(i);
+                            oldOrder.setTradeCount(oldOrder.getTradeCount().add(tempList.get(j).getTradeCount()));
+                            buyerOrders.set(i, oldOrder);
+                            tempList.remove(j);
                         }
                     }
                 }
             }
         }
+//        for (var seller : sellerList) {
+//            for (var i = 0; i < sellerOrder.size(); i++) {
+//                if (sellerOrder.get(i) != null) {
+//                    if (sellerOrder.get(i).getTradeAmount().compareTo(seller.getTradeAmount()) == 1) {
+//                        var index = i + 1 > 50 ? 49 : i + 1;
+//                        if (sellerOrder.size() < index) {
+//                            sellerOrder.add(seller);
+//                        } else {
+//                            sellerOrder.set(index, sellerOrder.get(i));
+//                            sellerOrder.set(i, seller);
+//                        }
+//                    }
+//                }
+//            }
+//        }
     }
 
     void makeTradeMarket() {
@@ -398,10 +421,11 @@ public class TradeEngieService implements TradeEngie {
             logger.info("核心交易服务已启动.");
             while (true) {
                 try {
-                    this.makeOrderHandle();
                     TimeUnit.MILLISECONDS.sleep(10);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
+                    this.makeOrderHandle();
+                } catch (Exception e) {
+                    logger.error("TS1:{}", e.getMessage());
+                    continue;
                 }
             }
         }).start();
@@ -409,10 +433,11 @@ public class TradeEngieService implements TradeEngie {
             logger.info("交易市场信息处理服务已启动.");
             while (true) {
                 try {
-                    this.makeOrderShow();
                     TimeUnit.MILLISECONDS.sleep(10);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
+                    this.makeOrderShow();
+                } catch (Exception e) {
+                    logger.error("TS2:{}", e.getMessage());
+                    continue;
                 }
             }
         }).start();
@@ -420,10 +445,11 @@ public class TradeEngieService implements TradeEngie {
             logger.info("交易市场信息推送已启动.");
             while (true) {
                 try {
-                    this.makeTradeMarket();
                     TimeUnit.MILLISECONDS.sleep(300);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
+                    this.makeTradeMarket();
+                } catch (Exception e) {
+                    logger.error("TS3:{}", e.getMessage());
+                    continue;
                 }
             }
         }).start();
