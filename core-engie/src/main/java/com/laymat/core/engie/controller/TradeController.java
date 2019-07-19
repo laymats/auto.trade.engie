@@ -1,8 +1,6 @@
 package com.laymat.core.engie.controller;
 
 
-import cn.hutool.core.util.IdUtil;
-import cn.hutool.core.util.RandomUtil;
 import com.laymat.core.db.dto.SaveUserOrder;
 import com.laymat.core.db.entity.UserTradeOrder;
 import com.laymat.core.db.service.UserTradeOrderService;
@@ -11,12 +9,10 @@ import com.laymat.core.db.utils.result.impl.SimpleResult;
 import com.laymat.core.engie.trade.TradeEngieService;
 import com.laymat.core.engie.trade.order.TradeOrder;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.*;
-
-import javax.validation.Valid;
-import java.math.BigDecimal;
-import java.util.HashMap;
-import java.util.Map;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 /**
  * @author dell
@@ -29,7 +25,7 @@ public class TradeController {
 
     private TradeEngieService tradeEngieService = TradeEngieService.getService();
 
-    @GetMapping("/new")
+    @PostMapping("/new")
     public BaseRestfulResult<Boolean> getUserOrderToPages(@RequestBody SaveUserOrder saveUserOrder) {
         if (userTradeOrderService.placeOrder(saveUserOrder)) {
             var userTradeOrder = new UserTradeOrder();

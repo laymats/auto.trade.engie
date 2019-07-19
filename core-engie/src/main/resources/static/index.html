@@ -136,7 +136,7 @@
             }
             ws.onmessage = function (ev) {
                 //console.log('ws message ' + ev.data);
-                if(!JSON.parse(ev.data).status) {
+                if (!JSON.parse(ev.data).status) {
                     _this.tradeData(JSON.parse(ev.data))
                 }
             }
@@ -177,8 +177,25 @@
             var userid = parseInt(Math.random() * 1000000);
             var price = $('[name="price"]').val();
             var amount = $('[name="amount"]').val();
-            $.get('trade/new', {price: price, count: amount, buy: buy, userId: userid}, function (res) {
-                $('.show-order').append("");
+
+            var placeOrder = {
+                UserId: userid,
+                TradePrice: price,
+                TradeCount: amount,
+                Buyer: buy ? 1 : 0
+            };
+            $.ajax({
+                url: "trade/new",
+                async: false,
+                type: "POST",
+                contentType: 'application/json',
+                dataType: 'json',
+                data: JSON.stringify(placeOrder),
+                success: function (data) {
+                    if (data.code != 0) {
+
+                    }
+                }
             });
         }
     };
