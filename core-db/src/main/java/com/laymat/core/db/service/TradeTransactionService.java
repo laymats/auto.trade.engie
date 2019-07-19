@@ -1,5 +1,6 @@
 package com.laymat.core.db.service;
 
+import com.laymat.core.db.dto.SaveTradeTransaction;
 import com.laymat.core.db.entity.TradeTransaction;
 import com.baomidou.mybatisplus.extension.service.IService;
 
@@ -12,5 +13,5 @@ import java.util.List;
  * @since 2019-07-19 16:00:23
  */
 public interface TradeTransactionService {
-    boolean saveTradeTransaction(TradeTransaction tradeTransaction);
+    boolean saveTradeTransaction(SaveTradeTransaction tradeTransaction);
 }

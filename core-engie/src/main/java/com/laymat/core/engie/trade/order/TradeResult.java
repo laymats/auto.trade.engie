@@ -14,11 +14,19 @@ public class TradeResult {
     /**
      * 买方
      */
-    private Long buyerId;
+    private Integer buyerId;
+    /**
+     * 买方挂单id
+     */
+    private String buyerTradeId;
     /**
      * 卖方
      */
-    private Long sellerId;
+    private Integer sellerId;
+    /**
+     * 卖方挂单id
+     */
+    private String sellerTradeId;
     /**
      * 交易单价
      */

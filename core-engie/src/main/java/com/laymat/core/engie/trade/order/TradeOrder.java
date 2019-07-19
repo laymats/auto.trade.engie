@@ -14,7 +14,7 @@ public class TradeOrder implements Comparable {
     /**
      * 下单用户
      */
-    private Long userId;
+    private Integer userId;
     /**
      * 交易单价
      */

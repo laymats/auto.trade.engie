@@ -1,6 +1,10 @@
 package com.laymat.core.engie.trade;
 
 import cn.hutool.core.util.RandomUtil;
+import com.laymat.core.db.dto.SaveTradeTransaction;
+import com.laymat.core.db.entity.TradeTransaction;
+import com.laymat.core.db.service.TradeTransactionService;
+import com.laymat.core.db.service.impl.TradeTransactionServiceImpl;
 import com.laymat.core.engie.trade.order.TradeOrder;
 import com.laymat.core.engie.trade.order.TradeResult;
 import com.laymat.core.engie.trade.subscribe.TradeMarketSubscribe;
@@ -67,6 +71,11 @@ public class TradeEngieService implements TradeEngie {
     private static volatile TradeResult[] tradeResults = new TradeResult[50];
     private static volatile BigDecimal finalHighPrice = BigDecimal.ZERO;
     private static volatile BigDecimal finalLowestPrice = BigDecimal.ZERO;
+
+    /**
+     * 数据库交互相关
+     */
+    private static TradeTransactionService tradeTransactionService = new TradeTransactionServiceImpl();
 
     private TradeMarketSubscribe tradeMarketSubscribe;
 
@@ -162,8 +171,16 @@ public class TradeEngieService implements TradeEngie {
 
             //更新至数据库
             scheduledThreadPoolExecutor.execute(() -> {
-                tradeResult.setTradeTime(new Date());
-                tradeResult.setTransactionSN(RandomUtil.randomString(15));
+                var tradeTransaction = new SaveTradeTransaction();
+                tradeTransaction.setBuyerId(tradeResult.getBuyerId());
+                tradeTransaction.setSellerId(tradeResult.getSellerId());
+                tradeTransaction.setTradePrice(tradeResult.getTradePrice());
+                tradeTransaction.setTradeCount(tradeResult.getTradeCount());
+                tradeTransaction.setTradeAmount(tradeResult.getTradeAmount());
+                tradeTransaction.setTradeTime(tradeResult.getTradeTime());
+                tradeTransaction.setBuyerId(tradeResult.getBuyerId());
+                tradeTransaction.setSellerId(tradeResult.getSellerId());
+                tradeTransactionService.saveTradeTransaction(tradeTransaction);
             });
         }
     }
@@ -283,7 +300,9 @@ public class TradeEngieService implements TradeEngie {
             this.updateSellOrder(sellTrade.getIndex(), sellTrade.getOrder());
         }
 
+        tradeResult.setBuyerTradeId(buyTrade.getOrder().getTradeId());
         tradeResult.setBuyerId(buyTrade.getOrder().getUserId());
+        tradeResult.setSellerTradeId(sellTrade.getOrder().getTradeId());
         tradeResult.setSellerId(sellTrade.getOrder().getUserId());
         tradeResult.setTradePrice(tradePrice);
         tradeResult.setTradeCount(tradeCount);

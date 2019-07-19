@@ -15,13 +15,13 @@ import lombok.Data;
  * (TmTradeorder)实体类
  *
  * @author laymat
- * @since 2019-07-19 15:58:39
+ * @since 2019-07-19 16:37:02
  */
 @Data
 @TableName("tm_TradeOrder")
 public class TradeOrder implements Serializable {
 
-    private static final long serialVersionUID = -24837414843898019L;
+    private static final long serialVersionUID = 260524549932540291L;
         
     @TableId(type = IdType.AUTO,value = "Id")
     private Integer Id;
@@ -50,6 +50,16 @@ public class TradeOrder implements Serializable {
      */    
     @TableField("TradeAmount")
     private BigDecimal TradeAmount;
+    /**
+     * 剩余数量
+     */    
+    @TableField("SurplusCount")
+    private BigDecimal SurplusCount;
+    /**
+     * 剩余金额
+     */    
+    @TableField("SurplusAmount")
+    private BigDecimal SurplusAmount;
     /**
      * 是否买单
      */    
