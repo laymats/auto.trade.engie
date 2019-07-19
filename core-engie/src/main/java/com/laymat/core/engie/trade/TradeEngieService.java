@@ -12,6 +12,8 @@ import org.slf4j.LoggerFactory;
 import java.math.BigDecimal;
 import java.util.*;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
+import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -55,6 +57,7 @@ public class TradeEngieService implements TradeEngie {
     private static volatile Object buyerLock = new Object();
     private static volatile Object sellerLock = new Object();
     private static volatile Object cancelLock = new Object();
+    private static ThreadPoolExecutor scheduledThreadPoolExecutor = new ScheduledThreadPoolExecutor(20);
 
     /**
      * 输出数据
@@ -151,13 +154,17 @@ public class TradeEngieService implements TradeEngie {
      */
     void saveTradeResult(TradeResult tradeResult) {
         if (tradeResult != null) {
-            tradeResult.setOrderTime(new Date());
-            tradeResult.setTransactionSN(RandomUtil.randomString(15));
             for (var i = tradeResults.length - 1; i > 0; i--) {
                 //删除最老的，按顺序位移
                 tradeResults[i] = tradeResults[i - 1];
             }
             tradeResults[0] = tradeResult;
+
+            //更新至数据库
+            scheduledThreadPoolExecutor.execute(() -> {
+                tradeResult.setTradeTime(new Date());
+                tradeResult.setTransactionSN(RandomUtil.randomString(15));
+            });
         }
     }
 
@@ -280,7 +287,7 @@ public class TradeEngieService implements TradeEngie {
         tradeResult.setSellerId(sellTrade.getOrder().getUserId());
         tradeResult.setTradePrice(tradePrice);
         tradeResult.setTradeCount(tradeCount);
-        tradeResult.setOrderAmount(finalTradeTotalAmount);
+        tradeResult.setTradeAmount(finalTradeTotalAmount);
 
         //初始化
         if (finalHighPrice.compareTo(BigDecimal.ZERO) == 0) {
@@ -447,7 +454,7 @@ public class TradeEngieService implements TradeEngie {
         return tradeOrders;
     }
 
-    HashMap<BigDecimal, TradeOrder> mergeOrderShow(LinkedList<TradeOrder> tradeOrders){
+    HashMap<BigDecimal, TradeOrder> mergeOrderShow(LinkedList<TradeOrder> tradeOrders) {
         var tempBuyerMaps = new HashMap<BigDecimal, TradeOrder>();
         for (var orders : tradeOrders) {
             if (tempBuyerMaps.containsKey(orders.getTradePrice())) {

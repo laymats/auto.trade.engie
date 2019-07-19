@@ -12,13 +12,13 @@ public class TradeResult {
      */
     private String transactionSN;
     /**
-     * 卖方
-     */
-    private Long sellerId;
-    /**
      * 买方
      */
     private Long buyerId;
+    /**
+     * 卖方
+     */
+    private Long sellerId;
     /**
      * 交易单价
      */
@@ -30,9 +30,9 @@ public class TradeResult {
     /**
      * 交易金额
      */
-    private BigDecimal orderAmount;
+    private BigDecimal tradeAmount;
     /**
      * 交易时间
      */
-    private Date orderTime;
+    private Date tradeTime;
 }
