@@ -3,9 +3,14 @@ package com.laymat.core.engie.controller;
 
 import cn.hutool.core.util.IdUtil;
 import cn.hutool.core.util.RandomUtil;
+import com.laymat.core.db.dto.SaveUserOrder;
 import com.laymat.core.db.entity.UserTradeOrder;
+import com.laymat.core.db.service.UserTradeOrderService;
+import com.laymat.core.db.utils.result.BaseRestfulResult;
+import com.laymat.core.db.utils.result.impl.SimpleResult;
 import com.laymat.core.engie.trade.TradeEngieService;
 import com.laymat.core.engie.trade.order.TradeOrder;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 import javax.validation.Valid;
@@ -19,32 +24,27 @@ import java.util.Map;
 @RestController
 @RequestMapping("/trade")
 public class TradeController {
+    @Autowired
+    UserTradeOrderService userTradeOrderService;
+
     private TradeEngieService tradeEngieService = TradeEngieService.getService();
 
     @GetMapping("/new")
-    public boolean getUserOrderToPages(BigDecimal price, BigDecimal count, Boolean buy, Integer userId) {
+    public BaseRestfulResult<Boolean> getUserOrderToPages(@RequestBody SaveUserOrder saveUserOrder) {
+        if (userTradeOrderService.placeOrder(saveUserOrder)) {
+            var userTradeOrder = new UserTradeOrder();
 
-        var userTradeOrder = new UserTradeOrder();
+            var order = new TradeOrder();
+            order.setTradeId(saveUserOrder.getTradeId());
+            order.setBuyer(saveUserOrder.getBuyer() == 1);
+            order.setTradePrice(saveUserOrder.getTradePrice());
+            order.setTradeCount(saveUserOrder.getTradeCount());
+            order.setUserId(saveUserOrder.getUserId());
 
-        var order = new TradeOrder();
-        order.setBuyer(buy);
-        order.setTradePrice(price);
-        order.setTradeCount(count);
-        order.setTradeId(IdUtil.fastUUID());
-        order.setUserId(userId);
-
-
-
-        return tradeEngieService.placeOrder(order);
-    }
-
-    @GetMapping("/order_list")
-    public Map getOrderList() {
-        var hashMap = new HashMap<>();
-        hashMap.put("buyer", tradeEngieService.getBuyers());
-        hashMap.put("seller", tradeEngieService.getSellers());
-        hashMap.put("trades", tradeEngieService.getTradeResults());
-        hashMap.put("status",tradeEngieService.getTradeStatus());
-        return hashMap;
+            var placeResult = tradeEngieService.placeOrder(order);
+            return SimpleResult.retMessageFromBoolean(placeResult);
+        } else {
+            return SimpleResult.retMessageFromBoolean(false);
+        }
     }
 }
