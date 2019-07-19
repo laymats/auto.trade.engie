@@ -157,7 +157,7 @@
             for (var i = 0; i < res.buyer.length; i++) {
                 var buyer = res.buyer[i];
                 $('#buyer_list').append('<tr>' +
-                    '<td>' + buyer.tradeAmount + '</td>' +
+                    '<td>' + buyer.tradePrice + '</td>' +
                     '<td>' + buyer.tradeCount + '</td>' +
                     '<td>' + buyer.totalAmount + '</td>' +
                     '</tr>');
@@ -165,7 +165,7 @@
             for (var i = 0; i < res.seller.length; i++) {
                 var seller = res.seller[i];
                 $('#seller_list').append('<tr>' +
-                    '<td>' + seller.tradeAmount + '</td>' +
+                    '<td>' + seller.tradePrice + '</td>' +
                     '<td>' + seller.tradeCount + '</td>' +
                     '<td>' + seller.totalAmount + '</td>' +
                     '</tr>');

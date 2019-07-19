@@ -24,7 +24,7 @@ public class TradeController {
     public boolean getUserOrderToPages(BigDecimal price, BigDecimal count, Boolean buy, Long userId) {
         var order = new TradeOrder();
         order.setBuyer(buy);
-        order.setTradeAmount(price);
+        order.setTradePrice(price);
         order.setTradeCount(count);
         order.setTradeId(IdUtil.fastUUID());
         order.setUserId(userId);

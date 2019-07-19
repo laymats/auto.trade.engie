@@ -10,7 +10,7 @@ public class TradeResult {
     /**
      * 交易单号
      */
-    private String orderSN;
+    private String transactionSN;
     /**
      * 卖方
      */

@@ -49,17 +49,18 @@ public class TradeEngieService implements TradeEngie {
      * 系统核心数据相关
      */
     private static volatile LinkedBlockingQueue<TradeOrder> tradeOrderMakeQueue = new LinkedBlockingQueue<>();
-    private static volatile LinkedBlockingQueue<TradeOrder> tradeOrderCancelQueue = new LinkedBlockingQueue<>();
     private static volatile LinkedList<TradeOrder> buyerList = new LinkedList<>();
     private static volatile LinkedList<TradeOrder> sellerList = new LinkedList<>();
+    private static volatile LinkedList<TradeOrder> cancelList = new LinkedList<>();
     private static volatile Object buyerLock = new Object();
     private static volatile Object sellerLock = new Object();
+    private static volatile Object cancelLock = new Object();
 
     /**
      * 输出数据
      */
     private static volatile LinkedList<TradeOrder> buyerOrders = new LinkedList<>();
-    private static volatile LinkedList<TradeOrder> sellerOrder = new LinkedList<>();
+    private static volatile LinkedList<TradeOrder> sellerOrders = new LinkedList<>();
     private static volatile TradeResult[] tradeResults = new TradeResult[50];
     private static volatile BigDecimal finalHighPrice = BigDecimal.ZERO;
     private static volatile BigDecimal finalLowestPrice = BigDecimal.ZERO;
@@ -70,7 +71,12 @@ public class TradeEngieService implements TradeEngie {
 
     }
 
-    public static TradeEngieService getService() {
+    /**
+     * 核心服务入口
+     *
+     * @return
+     */
+    public synchronized static TradeEngieService getService() {
         synchronized (tradeEngieServiceLock) {
             if (tradeEngieService == null) {
                 tradeEngieService = new TradeEngieService();
@@ -96,8 +102,8 @@ public class TradeEngieService implements TradeEngie {
         var highAmount = BigDecimal.ZERO;
         var index = 0;
         for (var i = 0; i < buyerList.size(); i++) {
-            if (buyerList.get(i).getTradeAmount().compareTo(highAmount) == 1) {
-                highAmount = buyerList.get(i).getTradeAmount();
+            if (buyerList.get(i).getTradePrice().compareTo(highAmount) == 1) {
+                highAmount = buyerList.get(i).getTradePrice();
                 highBuyer = buyerList.get(i);
                 index = i;
             }
@@ -122,9 +128,9 @@ public class TradeEngieService implements TradeEngie {
         var lowestAmount = highAmount;
         var index = 0;
         for (var i = 0; i < sellerList.size(); i++) {
-            var compareResult = sellerList.get(i).getTradeAmount().compareTo(lowestAmount);
+            var compareResult = sellerList.get(i).getTradePrice().compareTo(lowestAmount);
             if (compareResult == -1 || compareResult == 0) {
-                lowestAmount = sellerList.get(i).getTradeAmount();
+                lowestAmount = sellerList.get(i).getTradePrice();
                 lowestSeller = sellerList.get(i);
                 index = i;
             }
@@ -138,10 +144,15 @@ public class TradeEngieService implements TradeEngie {
         return simpleOrder;
     }
 
+    /**
+     * 保存交易结果
+     *
+     * @param tradeResult
+     */
     void saveTradeResult(TradeResult tradeResult) {
         if (tradeResult != null) {
             tradeResult.setOrderTime(new Date());
-            tradeResult.setOrderSN(RandomUtil.randomString(15));
+            tradeResult.setTransactionSN(RandomUtil.randomString(15));
             for (var i = tradeResults.length - 1; i > 0; i--) {
                 //删除最老的，按顺序位移
                 tradeResults[i] = tradeResults[i - 1];
@@ -150,30 +161,55 @@ public class TradeEngieService implements TradeEngie {
         }
     }
 
+    /**
+     * 更新买单信息
+     *
+     * @param index
+     * @param order
+     */
     void updateBuyOrder(Integer index, TradeOrder order) {
         synchronized (buyerLock) {
             buyerList.set(index, order);
         }
     }
 
+    /**
+     * 删除买单
+     *
+     * @param order
+     */
     void removeBuyOrder(TradeOrder order) {
         synchronized (buyerLock) {
             buyerList.remove(order);
         }
     }
 
+    /**
+     * 更新卖单信息
+     *
+     * @param index
+     * @param order
+     */
     void updateSellOrder(Integer index, TradeOrder order) {
         synchronized (sellerLock) {
             sellerList.set(index, order);
         }
     }
 
+    /**
+     * 删除卖单
+     *
+     * @param order
+     */
     void removeSellOrder(TradeOrder order) {
         synchronized (sellerLock) {
             sellerList.remove(order);
         }
     }
 
+    /**
+     * 订单撮合
+     */
     void doTradeOrder() {
         TRADE_RUN_STATUS.set(TRADE_RUNNING.get());
         //撮合双方交易
@@ -184,7 +220,7 @@ public class TradeEngieService implements TradeEngie {
             return;
         }
 
-        var sellTrade = getlowestTradeOrder(buyTrade.getOrder().getTradeAmount());
+        var sellTrade = getlowestTradeOrder(buyTrade.getOrder().getTradePrice());
         if (sellTrade == null) {
             TRADE_RUN_STATUS.set(TRADE_WAITING.get());
             logger.info("撮合完毕.");
@@ -199,7 +235,7 @@ public class TradeEngieService implements TradeEngie {
 
         //买单数量和卖单一致
         if (compareResult == 0) {
-            tradePrice = sellTrade.getOrder().getTradeAmount();
+            tradePrice = sellTrade.getOrder().getTradePrice();
             tradeCount = sellTrade.getOrder().getTradeCount();
             //最终交易金额
             finalTradeTotalAmount = tradePrice.multiply(tradeCount);
@@ -211,13 +247,13 @@ public class TradeEngieService implements TradeEngie {
 
         //买单数量比卖单多
         if (compareResult == 1) {
-            tradePrice = sellTrade.getOrder().getTradeAmount();
+            tradePrice = sellTrade.getOrder().getTradePrice();
             tradeCount = sellTrade.getOrder().getTradeCount();
 
             //剩余数量
             var finalTradeCount = buyTrade.getOrder().getTradeCount().subtract(tradeCount);
             //最终交易金额
-            finalTradeTotalAmount = tradeCount.multiply(sellTrade.getOrder().getTradeAmount());
+            finalTradeTotalAmount = tradeCount.multiply(sellTrade.getOrder().getTradePrice());
             logger.info("T2:购买单价{}，购买数量{}，订单总额{}", tradePrice, tradeCount, finalTradeTotalAmount);
 
             buyTrade.getOrder().setTradeCount(finalTradeCount);
@@ -227,7 +263,7 @@ public class TradeEngieService implements TradeEngie {
 
         //买单数量比卖单少
         if (compareResult == -1) {
-            tradePrice = sellTrade.getOrder().getTradeAmount();
+            tradePrice = sellTrade.getOrder().getTradePrice();
             tradeCount = buyTrade.getOrder().getTradeCount();
             //剩余数量
             var finalTradeCount = sellTrade.getOrder().getTradeCount().subtract(tradeCount);
@@ -267,6 +303,38 @@ public class TradeEngieService implements TradeEngie {
         this.doTradeOrder();
     }
 
+    /**
+     * 撤销订单
+     */
+    void doCancleOrder() {
+        var buyerRemoves = new ArrayList<TradeOrder>();
+        var sellerRemoves = new ArrayList<TradeOrder>();
+        for (var cancelOrder : cancelList) {
+            for (var buyer : buyerList) {
+                if (cancelOrder.getUserId().compareTo(buyer.getUserId()) == 0 && cancelOrder.getTradePrice().compareTo(buyer.getTradePrice()) == 0) {
+                    buyerRemoves.add(buyer);
+                }
+            }
+            for (var seller : sellerList) {
+                if (cancelOrder.getUserId().compareTo(seller.getUserId()) == 0 && cancelOrder.getTradePrice().compareTo(seller.getTradePrice()) == 0) {
+                    sellerRemoves.add(seller);
+                }
+            }
+        }
+        for (var buyer : buyerRemoves) {
+            this.removeBuyOrder(buyer);
+        }
+        for (var seller : sellerRemoves) {
+            this.removeSellOrder(seller);
+        }
+        cancelList.clear();
+    }
+
+    /**
+     * 添加买单
+     *
+     * @param order
+     */
     void addBuyer(TradeOrder order) {
         synchronized (buyerLock) {
             //检查用户是有存在相同下单信息
@@ -274,7 +342,7 @@ public class TradeEngieService implements TradeEngie {
             for (var buyer : buyerList) {
                 //如果出现新订单用户已下单且下单单价一致的情况下，对订单进行合并操作
                 if (buyer.getUserId().equals(order.getUserId())
-                        && buyer.getTradeAmount().equals(order.getTradeAmount())) {
+                        && buyer.getTradePrice().equals(order.getTradePrice())) {
                     var newBuyCount = order.getTradeCount().add(buyer.getTradeCount());
                     buyer.setTradeCount(newBuyCount);
                     checkUserBuyOrderExist = true;
@@ -287,6 +355,11 @@ public class TradeEngieService implements TradeEngie {
         }
     }
 
+    /**
+     * 添加卖单
+     *
+     * @param order
+     */
     void addSeller(TradeOrder order) {
         synchronized (sellerLock) {
             //检查用户是有存在相同下单信息
@@ -294,7 +367,7 @@ public class TradeEngieService implements TradeEngie {
             for (var seller : sellerList) {
                 //如果出现新订单用户已下单且下单单价一致的情况下，对订单进行合并操作
                 if (seller.getUserId().equals(order.getUserId())
-                        && seller.getTradeAmount().equals(order.getTradeAmount())) {
+                        && seller.getTradePrice().equals(order.getTradePrice())) {
                     var newBuyCount = order.getTradeCount().add(seller.getTradeCount());
                     seller.setTradeCount(newBuyCount);
                     checkUserSellOrderExist = true;
@@ -307,6 +380,17 @@ public class TradeEngieService implements TradeEngie {
         }
     }
 
+    /**
+     * 添加等待取消订单
+     *
+     * @param order
+     */
+    void addCancelOrder(TradeOrder order) {
+        synchronized (cancelLock) {
+            cancelList.add(order);
+        }
+    }
+
     void makeOrderHandle() {
         var size = tradeOrderMakeQueue.size();
         if (size == 0) {
@@ -315,91 +399,112 @@ public class TradeEngieService implements TradeEngie {
 
         /**
          * 获取等待处理的队列数据，处理思路示例
-         * 1、根据算法模型，每次取出指定数据大小，列如100/1000/10000，再根据算法权重去计算哪一个id符合条件（适合控制抽奖活动）
-         * 2、取出所有数据，并将id进行组合提交到后台查询，然后再将组合查询的结果拆分之后返回给客户端（适合海量请求处理）
+         * 1、根据下单类型将订单数据划分到具体买/卖集合
+         * 2、交易撮合
          */
         var buyCount = 0;
         var sellCount = 0;
         for (var i = 0; i < size; i++) {
             var tradeOrder = tradeOrderMakeQueue.poll();
-            if (tradeOrder.isBuyer()) {
-                buyCount++;
-                this.addBuyer(tradeOrder);
+            if (tradeOrder.isCancel()) {
+                this.addCancelOrder(tradeOrder);
             } else {
-                sellCount++;
-                this.addSeller(tradeOrder);
+                if (tradeOrder.isBuyer()) {
+                    buyCount++;
+                    this.addBuyer(tradeOrder);
+                } else {
+                    sellCount++;
+                    this.addSeller(tradeOrder);
+                }
             }
         }
-        logger.info("获取新交易请求共{}个，买单{}，卖单{}", size, buyCount, sellCount);
+        logger.info("获取新交易请求共{}个，买单{}，卖单{}，累计买单{}，卖单{}", size, buyCount, sellCount, buyerList.size(), sellerList.size());
+        this.doCancleOrder();
         this.doTradeOrder();
     }
 
-    boolean checkBuyerExsit(TradeOrder order) {
-        for (var buy : buyerOrders) {
-            if (order.getTradeId().equals(buy.getTradeId())) {
-                return true;
-            }
+    LinkedList<TradeOrder> getBuyerList() {
+        var tradeOrders = new LinkedList<TradeOrder>();
+        for (var buyer : buyerList) {
+            var tradeOrder = new TradeOrder();
+            tradeOrder.setTradePrice(buyer.getTradePrice());
+            tradeOrder.setTradeCount(buyer.getTradeCount());
+            tradeOrder.setTotalAmount(buyer.getTotalAmount());
+            tradeOrders.add(tradeOrder);
         }
-        return false;
+        return tradeOrders;
     }
 
-    void makeOrderShow() {
+    LinkedList<TradeOrder> getSellerList() {
+        var tradeOrders = new LinkedList<TradeOrder>();
+        for (var buyer : sellerList) {
+            var tradeOrder = new TradeOrder();
+            tradeOrder.setTradePrice(buyer.getTradePrice());
+            tradeOrder.setTradeCount(buyer.getTradeCount());
+            tradeOrder.setTotalAmount(buyer.getTotalAmount());
+            tradeOrders.add(tradeOrder);
+        }
+        return tradeOrders;
+    }
 
-        for (var buyer : buyerList) {
-            var newUpdate = false;
-            if (buyerOrders.size() < 50) {
-                if (!checkBuyerExsit(buyer)) {
-                    buyerOrders.add(buyer);
-                    newUpdate = true;
-                }
+    HashMap<BigDecimal, TradeOrder> mergeOrderShow(LinkedList<TradeOrder> tradeOrders){
+        var tempBuyerMaps = new HashMap<BigDecimal, TradeOrder>();
+        for (var orders : tradeOrders) {
+            if (tempBuyerMaps.containsKey(orders.getTradePrice())) {
+                var tempData = tempBuyerMaps.get(orders.getTradePrice());
+                tempData.setTradeCount(tempData.getTradeCount().add(orders.getTradeCount()));
+                tempBuyerMaps.put(tempData.getTradePrice(), tempData);
             } else {
-                //添加前50
-                for (var i = 0; i < buyerOrders.size(); i++) {
-                    if (buyerOrders.get(i) != null) {
-                        var compareResult = buyerOrders.get(i).getTradeAmount().compareTo(buyer.getTradeAmount());
-                        if (compareResult == -1) {
-                            buyerOrders.set(i - 1 < 0 ? 0 : i - 1, buyerOrders.get(i));
-                            buyerOrders.set(i, buyer);
-                            newUpdate = true;
-                        }
-                    }
-                }
-            }
-
-            if(newUpdate) {
-                //合并价格相同
-                var tempList = new LinkedList<TradeOrder>();
-                for (var tempBuyer : buyerOrders) {
-                    tempList.add(tempBuyer);
-                }
-                for (var i = 0; i < buyerOrders.size(); i++) {
-                    for (var j = 0; j < tempList.size(); j++) {
-                        var compareResult = buyerOrders.get(i).getTradeAmount().compareTo(tempList.get(j).getTradeAmount());
-                        if (compareResult == 0 && buyerOrders.get(i).getUserId().compareTo(tempList.get(j).getUserId()) != 0) {
-                            var oldOrder = buyerOrders.get(i);
-                            oldOrder.setTradeCount(oldOrder.getTradeCount().add(tempList.get(j).getTradeCount()));
-                            buyerOrders.set(i, oldOrder);
-                            tempList.remove(j);
-                        }
-                    }
-                }
+                tempBuyerMaps.put(orders.getTradePrice(), orders);
             }
         }
-//        for (var seller : sellerList) {
-//            for (var i = 0; i < sellerOrder.size(); i++) {
-//                if (sellerOrder.get(i) != null) {
-//                    if (sellerOrder.get(i).getTradeAmount().compareTo(seller.getTradeAmount()) == 1) {
-//                        var index = i + 1 > 50 ? 49 : i + 1;
-//                        if (sellerOrder.size() < index) {
-//                            sellerOrder.add(seller);
-//                        } else {
-//                            sellerOrder.set(index, sellerOrder.get(i));
-//                            sellerOrder.set(i, seller);
-//                        }
-//                    }
-//                }
-//            }
-//        }
+        return tempBuyerMaps;
+    }
+
+    /**
+     * 创建买单列表
+     */
+    void makeBuyOrderShow() {
+        var tempMaps = this.mergeOrderShow(this.getBuyerList());
+
+        var priceKeyArray = tempMaps.keySet().toArray();
+        Arrays.sort(priceKeyArray);
+
+        //取前五十条
+        buyerOrders = new LinkedList<>();
+        for (var buyerKey : priceKeyArray) {
+            if (buyerOrders.size() < 50) {
+                var buyer = tempMaps.get(buyerKey);
+                if (buyer != null) {
+                    buyerOrders.add(buyer);
+                }
+            } else {
+                break;
+            }
+        }
+    }
+
+    /**
+     * 创建卖单列表
+     */
+    void makeSellOrderShow() {
+        var tempMaps = this.mergeOrderShow(this.getSellerList());
+
+        var priceKeyArray = tempMaps.keySet().toArray();
+        Arrays.sort(priceKeyArray);
+
+        //取前五十条
+        sellerOrders = new LinkedList<>();
+        for (var buyerKey : priceKeyArray) {
+            if (sellerOrders.size() < 50) {
+                var buyer = tempMaps.get(buyerKey);
+                if (buyer != null) {
+                    sellerOrders.add(buyer);
+                }
+            } else {
+                break;
+            }
+        }
     }
 
     void makeTradeMarket() {
@@ -409,7 +514,7 @@ public class TradeEngieService implements TradeEngie {
             status.setHighPrice(finalHighPrice);
             status.setLowPrice(finalLowestPrice);
             status.setBuyer(buyerOrders);
-            status.setSeller(sellerOrder);
+            status.setSeller(sellerOrders);
             status.setTrades(getTradeResults());
 
             tradeMarketSubscribe.doData(status);
@@ -434,7 +539,8 @@ public class TradeEngieService implements TradeEngie {
             while (true) {
                 try {
                     TimeUnit.MILLISECONDS.sleep(10);
-                    this.makeOrderShow();
+                    this.makeBuyOrderShow();
+                    this.makeSellOrderShow();
                 } catch (Exception e) {
                     logger.error("TS2:{}", e.getMessage());
                     continue;
@@ -491,7 +597,7 @@ public class TradeEngieService implements TradeEngie {
     @Override
     public boolean placeOrder(TradeOrder order) {
         if (RUN_STATUS.get() == SYSTEM_RUNNING.get()) {
-            order.setTotalAmount(order.getTradeAmount().multiply(order.getTradeCount()));
+            order.setTotalAmount(order.getTradePrice().multiply(order.getTradeCount()));
             tradeOrderMakeQueue.add(order);
             return true;
         } else {
@@ -502,8 +608,7 @@ public class TradeEngieService implements TradeEngie {
     @Override
     public boolean cancelOrder(TradeOrder order) {
         if (RUN_STATUS.get() == SYSTEM_RUNNING.get()) {
-            order.setTotalAmount(order.getTradeAmount().multiply(order.getTradeCount()));
-            tradeOrderCancelQueue.add(order);
+            tradeOrderMakeQueue.add(order);
             return false;
         } else {
             return true;
@@ -517,7 +622,7 @@ public class TradeEngieService implements TradeEngie {
 
     @Override
     public List<TradeOrder> getSellers() {
-        return sellerOrder;
+        return sellerOrders;
     }
 
     @Override
