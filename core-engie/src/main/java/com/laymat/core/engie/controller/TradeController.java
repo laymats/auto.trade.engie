@@ -3,6 +3,7 @@ package com.laymat.core.engie.controller;
 
 import cn.hutool.core.util.IdUtil;
 import cn.hutool.core.util.RandomUtil;
+import com.laymat.core.db.entity.UserTradeOrder;
 import com.laymat.core.engie.trade.TradeEngieService;
 import com.laymat.core.engie.trade.order.TradeOrder;
 import org.springframework.web.bind.annotation.*;
@@ -21,13 +22,18 @@ public class TradeController {
     private TradeEngieService tradeEngieService = TradeEngieService.getService();
 
     @GetMapping("/new")
-    public boolean getUserOrderToPages(BigDecimal price, BigDecimal count, Boolean buy, Long userId) {
+    public boolean getUserOrderToPages(BigDecimal price, BigDecimal count, Boolean buy, Integer userId) {
+
+        var userTradeOrder = new UserTradeOrder();
+
         var order = new TradeOrder();
         order.setBuyer(buy);
         order.setTradePrice(price);
         order.setTradeCount(count);
         order.setTradeId(IdUtil.fastUUID());
         order.setUserId(userId);
+
+
 
         return tradeEngieService.placeOrder(order);
     }

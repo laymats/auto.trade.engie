@@ -1,24 +1,20 @@
 package com.laymat.core.db.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
-import com.laymat.core.db.dao.TradeOrderDao;
+import com.laymat.core.db.dao.TradeTransactionDao;
 import com.laymat.core.db.dao.UserDao;
 import com.laymat.core.db.dao.UserGoodDao;
+import com.laymat.core.db.dao.UserTradeOrderDao;
 import com.laymat.core.db.dto.SaveTradeTransaction;
-import com.laymat.core.db.entity.TradeOrder;
-import com.laymat.core.db.entity.TradeTransaction;
-import com.laymat.core.db.dao.TradeTransactionDao;
 import com.laymat.core.db.entity.UserGood;
+import com.laymat.core.db.entity.UserTradeOrder;
 import com.laymat.core.db.service.TradeTransactionService;
-
 import com.laymat.core.db.utils.SimpleSNBuilder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
-import java.util.Date;
-import java.util.List;
 
 /**
  * (TmTradetransaction)表服务实现类
@@ -33,7 +29,7 @@ public class TradeTransactionServiceImpl implements TradeTransactionService {
     @Autowired
     private UserDao userDao;
     @Autowired
-    private TradeOrderDao tradeOrderDao;
+    private UserTradeOrderDao userTradeOrderDao;
     @Autowired
     private UserGoodDao userGoodDao;
 
@@ -69,23 +65,23 @@ public class TradeTransactionServiceImpl implements TradeTransactionService {
             userDao.updateById(seller);
             userGoodDao.updateById(sellerGood);
 
-            var buyerOrder = tradeOrderDao.selectOne(new QueryWrapper<TradeOrder>().eq("TradeId", tradeTransaction.getBuyerId()));
+            var buyerOrder = userTradeOrderDao.selectOne(new QueryWrapper<UserTradeOrder>().eq("TradeId", tradeTransaction.getBuyerId()));
             buyerOrder.setSurplusAmount(buyerOrder.getTradeAmount().subtract(tradeTransaction.getTradeAmount()));
             if (buyerOrder.getSurplusAmount().compareTo(BigDecimal.ZERO) == 0) {
                 buyerOrder.setFinishDate(tradeTransaction.getTradeTime());
             }else{
                 buyerOrder.setTradeDate(tradeTransaction.getTradeTime());
             }
-            tradeOrderDao.updateById(buyerOrder);
+            userTradeOrderDao.updateById(buyerOrder);
 
-            var sellerOrder = tradeOrderDao.selectOne(new QueryWrapper<TradeOrder>().eq("TradeId", tradeTransaction.getSellerId()));
+            var sellerOrder = userTradeOrderDao.selectOne(new QueryWrapper<UserTradeOrder>().eq("TradeId", tradeTransaction.getSellerId()));
             sellerOrder.setSurplusCount(sellerOrder.getTradeCount().subtract(tradeTransaction.getTradeCount()));
             if (sellerOrder.getSurplusCount().compareTo(BigDecimal.ZERO) == 0) {
                 sellerOrder.setFinishDate(tradeTransaction.getTradeTime());
             }else{
                 sellerOrder.setTradeDate(tradeTransaction.getTradeTime());
             }
-            tradeOrderDao.updateById(sellerOrder);
+            userTradeOrderDao.updateById(sellerOrder);
 
             return tradeTransactionDao.insert(tradeTransaction) > 0;
         }
