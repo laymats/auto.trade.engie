@@ -178,8 +178,6 @@ public class TradeEngieService implements TradeEngie {
                 tradeTransaction.setTradeCount(tradeResult.getTradeCount());
                 tradeTransaction.setTradeAmount(tradeResult.getTradeAmount());
                 tradeTransaction.setTradeTime(tradeResult.getTradeTime());
-                tradeTransaction.setBuyerId(tradeResult.getBuyerId());
-                tradeTransaction.setSellerId(tradeResult.getSellerId());
                 tradeTransactionService.saveTradeTransaction(tradeTransaction);
             });
         }

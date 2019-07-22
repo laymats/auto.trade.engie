@@ -6,6 +6,7 @@ import com.laymat.core.db.entity.UserTradeOrder;
 import com.laymat.core.db.service.UserTradeOrderService;
 import com.laymat.core.db.utils.result.BaseRestfulResult;
 import com.laymat.core.db.utils.result.impl.SimpleResult;
+import com.laymat.core.engie.controller.base.BaseController;
 import com.laymat.core.engie.trade.TradeEngieService;
 import com.laymat.core.engie.trade.order.TradeOrder;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,7 +20,7 @@ import org.springframework.web.bind.annotation.RestController;
  */
 @RestController
 @RequestMapping("/trade")
-public class TradeController {
+public class TradeController extends BaseController {
     @Autowired
     UserTradeOrderService userTradeOrderService;
 
@@ -27,15 +28,14 @@ public class TradeController {
 
     @PostMapping("/new")
     public BaseRestfulResult<Boolean> getUserOrderToPages(@RequestBody SaveUserOrder saveUserOrder) {
+        saveUserOrder.setUserId(this.getSession().getUserId());
         if (userTradeOrderService.placeOrder(saveUserOrder)) {
-            var userTradeOrder = new UserTradeOrder();
-
             var order = new TradeOrder();
             order.setTradeId(saveUserOrder.getTradeId());
             order.setBuyer(saveUserOrder.getBuyer() == 1);
             order.setTradePrice(saveUserOrder.getTradePrice());
             order.setTradeCount(saveUserOrder.getTradeCount());
-            order.setUserId(saveUserOrder.getUserId());
+            order.setUserId(this.getSession().getUserId());
 
             var placeResult = tradeEngieService.placeOrder(order);
             return SimpleResult.retMessageFromBoolean(placeResult);

@@ -22,7 +22,7 @@ spring:
   # jdbc datasource config
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
-    url: jdbc:mysql://api.ruiwuo.com:3306/traffic_cloud?useUnicode=true&characterEncoding=utf-8&useSSL=false&serverTimezone=Asia/Shanghai
+    url: jdbc:mysql://api.ruiwuo.com:3306/trade_market?useUnicode=true&characterEncoding=utf-8&useSSL=false&serverTimezone=Asia/Shanghai
     username: root
     password: Laymat@123
     testSql: SELECT 1

@@ -44,6 +44,11 @@
 
 <div class="contentContainer trade-market">
     <div class="user">
+        账号：<input name="userName">
+        密码：<input name="userPass">
+        <input type="button" value="登录" onclick="tradeEngie.login()">
+    </div>
+    <div class="user">
         价格：<input name="price">
         数量：<input name="amount">
         <input type="button" value="买" onclick="tradeEngie.place(true)">
@@ -128,6 +133,24 @@
         start: function () {
             this.tradeMarket();
         },
+        login: function () {
+            var uname = $('[name="userName"]').val();
+            var upass = $('[name="userPass"]').val();
+
+            $.ajax({
+                url: "user/login",
+                async: false,
+                type: "POST",
+                contentType: 'application/json;charset=utf-8',
+                dataType: 'json',
+                data: JSON.stringify({uname: uname, upass: upass}),
+                success: function (data) {
+                    if (data.code != 0) {
+                        alert('');
+                    }
+                }
+            });
+        },
         tradeMarket: function () {
             var _this = this;
             var ws = new WebSocket("ws://" + location.host + "/trade/market/123");
@@ -179,16 +202,16 @@
             var amount = $('[name="amount"]').val();
 
             var placeOrder = {
-                UserId: userid,
-                TradePrice: price,
-                TradeCount: amount,
-                Buyer: buy ? 1 : 0
+                userId: userid,
+                tradePrice: price,
+                tradeCount: amount,
+                buyer: buy ? 1 : 0
             };
             $.ajax({
                 url: "trade/new",
                 async: false,
                 type: "POST",
-                contentType: 'application/json',
+                contentType: 'application/json;charset=utf-8',
                 dataType: 'json',
                 data: JSON.stringify(placeOrder),
                 success: function (data) {

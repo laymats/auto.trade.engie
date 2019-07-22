@@ -15,6 +15,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Date;
 import java.util.List;
 
 /**
@@ -36,15 +37,21 @@ public class UserTradeOrderServiceImpl implements UserTradeOrderService {
     @Transactional(rollbackFor = Exception.class)
     public boolean placeOrder(SaveUserOrder userOrder) {
         userOrder.setTradeId(IdUtil.fastUUID());
+        userOrder.setTradeDate(new Date());
         var userInfo = userDao.selectById(userOrder.getUserId());
 
+        if (userInfo == null) {
+            throw new SimpleException("用户不存在[%s]", userOrder.getUserId());
+        }
         userOrder.setTradeAmount(userOrder.getTradePrice().multiply(userOrder.getTradeCount()));
         if (userOrder.getBuyer() == 1) {
-            var checkMoney = userInfo.getUserMoney().compareTo(userOrder.getTradeAmount());
+            var money = userOrder.getTradeCount().multiply(userOrder.getTradePrice());
+            var checkMoney = userInfo.getUserMoney().compareTo(money);
             if (checkMoney == -1) {
                 throw new SimpleException("余额不足[%s]", userInfo.getUserMoney());
             } else {
-                userInfo.setFreezeMoney(userInfo.getFreezeMoney().add(userOrder.getTradeCount()));
+                userInfo.setFreezeMoney(userInfo.getFreezeMoney().add(money));
+                userInfo.setUserMoney(userInfo.getUserMoney().subtract(money));
                 userDao.updateById(userInfo);
             }
         } else {
