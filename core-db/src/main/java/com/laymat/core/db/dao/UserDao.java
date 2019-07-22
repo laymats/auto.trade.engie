@@ -2,6 +2,7 @@ package com.laymat.core.db.dao;
 
 import com.laymat.core.db.entity.User;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import org.apache.ibatis.annotations.Select;
 import org.springframework.stereotype.Repository;
 
 /**

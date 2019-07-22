@@ -1,6 +1,7 @@
 package com.laymat.core.db.service.impl;
 
 import cn.hutool.core.util.IdUtil;
+import com.baomidou.mybatisplus.core.conditions.Wrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.laymat.core.db.dao.UserDao;
 import com.laymat.core.db.dao.UserGoodDao;
@@ -65,5 +66,15 @@ public class UserTradeOrderServiceImpl implements UserTradeOrderService {
             }
         }
         return userTradeOrderDao.insert(userOrder) > 0;
+    }
+
+    @Override
+    public List<UserTradeOrder> getUserOrders() {
+        var buyerList = userTradeOrderDao.selectBuyerList();
+
+        var sellerList = userTradeOrderDao.selectSellerList();
+        buyerList.addAll(sellerList);
+
+        return buyerList;
     }
 }

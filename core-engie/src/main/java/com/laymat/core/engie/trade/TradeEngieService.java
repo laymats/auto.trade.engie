@@ -3,8 +3,11 @@ package com.laymat.core.engie.trade;
 import cn.hutool.core.util.RandomUtil;
 import com.laymat.core.db.dto.SaveTradeTransaction;
 import com.laymat.core.db.entity.TradeTransaction;
+import com.laymat.core.db.entity.UserTradeOrder;
 import com.laymat.core.db.service.TradeTransactionService;
+import com.laymat.core.db.service.UserTradeOrderService;
 import com.laymat.core.db.service.impl.TradeTransactionServiceImpl;
+import com.laymat.core.db.service.impl.UserTradeOrderServiceImpl;
 import com.laymat.core.engie.trade.order.TradeOrder;
 import com.laymat.core.engie.trade.order.TradeResult;
 import com.laymat.core.engie.trade.subscribe.TradeMarketSubscribe;
@@ -12,6 +15,7 @@ import com.laymat.core.engie.trade.subscribe.TradeStatus;
 import lombok.Data;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import java.math.BigDecimal;
 import java.util.*;
@@ -75,7 +79,10 @@ public class TradeEngieService implements TradeEngie {
     /**
      * 数据库交互相关
      */
-    private static TradeTransactionService tradeTransactionService = new TradeTransactionServiceImpl();
+    @Autowired
+    private TradeTransactionService tradeTransactionService;
+    @Autowired
+    private UserTradeOrderService userTradeOrderService;
 
     private TradeMarketSubscribe tradeMarketSubscribe;
 
@@ -546,6 +553,23 @@ public class TradeEngieService implements TradeEngie {
     }
 
     void start() {
+        logger.info("读取历史订单中...");
+        //先拉取系统订单
+        var userOrders = userTradeOrderService.getUserOrders();
+        logger.info("已获取到{}条历史订单.", userOrders.size());
+        for (var order : userOrders) {
+            var tradeOrder = new TradeOrder();
+            tradeOrder.setTradeId(order.getTradeId());
+            tradeOrder.setUserId(order.getUserId());
+            tradeOrder.setBuyer(order.getBuyer() == 1);
+            tradeOrder.setMarketOrder(order.getMarketOrder() == 1);
+            tradeOrder.setTradePrice(order.getTradePrice());
+            tradeOrder.setTradeCount(order.getTradeCount());
+            tradeOrder.setTotalAmount(order.getTradeAmount());
+            tradeOrderMakeQueue.add(tradeOrder);
+        }
+
+        //启动核心服务
         new Thread(() -> {
             logger.info("核心交易服务已启动.");
             while (true) {

@@ -17,4 +17,10 @@ public interface UserTradeOrderService {
      * @return
      */
     boolean placeOrder(SaveUserOrder userOrder);
+
+    /**
+     * 获取未交易的订单
+     * @return
+     */
+    List<UserTradeOrder> getUserOrders();
 }
