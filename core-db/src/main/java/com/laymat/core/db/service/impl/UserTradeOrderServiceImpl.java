@@ -70,8 +70,7 @@ public class UserTradeOrderServiceImpl implements UserTradeOrderService {
 
     @Override
     public List<UserTradeOrder> getUserOrders() {
-        var buyerList = userTradeOrderDao.selectBuyerList();
-
+        var buyerList = userTradeOrderDao.selectList(new QueryWrapper<>());
         var sellerList = userTradeOrderDao.selectSellerList();
         buyerList.addAll(sellerList);
 

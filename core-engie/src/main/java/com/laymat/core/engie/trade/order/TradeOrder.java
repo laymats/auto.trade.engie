@@ -2,11 +2,15 @@ package com.laymat.core.engie.trade.order;
 
 import lombok.Data;
 
+import java.io.Serializable;
 import java.math.BigDecimal;
 import java.util.Date;
 
+/**
+ * 核心交易薄信息
+ */
 @Data
-public class TradeOrder implements Comparable {
+public class TradeOrder implements Serializable {
     /**
      * 下单号
      */
@@ -47,13 +51,4 @@ public class TradeOrder implements Comparable {
      * 是否撤销操作
      */
     private boolean cancel;
-
-    @Override
-    public int compareTo(Object o) {
-        if (o instanceof TradeOrder) {
-            TradeOrder tradeOrder = (TradeOrder) o;
-            return this.getTradePrice().compareTo(tradeOrder.getTradePrice());
-        }
-        return 0;
-    }
 }

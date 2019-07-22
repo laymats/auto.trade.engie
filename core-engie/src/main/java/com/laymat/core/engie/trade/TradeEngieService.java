@@ -79,10 +79,8 @@ public class TradeEngieService implements TradeEngie {
     /**
      * 数据库交互相关
      */
-    @Autowired
-    private TradeTransactionService tradeTransactionService;
-    @Autowired
-    private UserTradeOrderService userTradeOrderService;
+    private static TradeTransactionService tradeTransactionService = new TradeTransactionServiceImpl();
+    private static UserTradeOrderService userTradeOrderService = new UserTradeOrderServiceImpl();
 
     private TradeMarketSubscribe tradeMarketSubscribe;
 
@@ -116,13 +114,27 @@ public class TradeEngieService implements TradeEngie {
      * @return
      */
     SimpleTradeOrder getHighTradeOrder() {
+        if (buyerList.size() == 0) {
+            return null;
+        }
+
         TradeOrder highBuyer = null;
-        //先获取出买价最高的人
-        var highAmount = BigDecimal.ZERO;
         var index = 0;
-        for (var i = 0; i < buyerList.size(); i++) {
-            if (buyerList.get(i).getTradePrice().compareTo(highAmount) == 1) {
-                highAmount = buyerList.get(i).getTradePrice();
+
+        //市价单处理
+        for (var i = buyerList.size() - 1; i > -1; i--) {
+            if (buyerList.get(i).isMarketOrder()) {
+                highBuyer = buyerList.get(i);
+                highBuyer.setTradePrice(BigDecimal.ZERO);
+                index = i;
+                break;
+            }
+        }
+
+        //限价单处理
+        highBuyer = buyerList.get(buyerList.size() - 1 < 0 ? 0 : buyerList.size() - 1);
+        for (var i = buyerList.size() - 1; i > -1; i--) {
+            if (buyerList.get(i).getTradePrice().compareTo(highBuyer.getTradePrice()) == 1) {
                 highBuyer = buyerList.get(i);
                 index = i;
             }
@@ -139,20 +151,47 @@ public class TradeEngieService implements TradeEngie {
     /**
      * 获取卖出报价最低的订单
      *
-     * @param highAmount 购买价格
+     * @param tradeOrder 购买价格
      * @return
      */
-    SimpleTradeOrder getlowestTradeOrder(BigDecimal highAmount) {
+    SimpleTradeOrder getlowestTradeOrder(TradeOrder tradeOrder) {
+        if (sellerList.size() == 0) {
+            return null;
+        }
+
         TradeOrder lowestSeller = null;
-        var lowestAmount = highAmount;
         var index = 0;
-        for (var i = 0; i < sellerList.size(); i++) {
-            var compareResult = sellerList.get(i).getTradePrice().compareTo(lowestAmount);
-            if (compareResult == -1 || compareResult == 0) {
-                lowestAmount = sellerList.get(i).getTradePrice();
-                lowestSeller = sellerList.get(i);
-                index = i;
+
+        //市价单处理
+        if (tradeOrder.isMarketOrder()) {
+            /**
+             * 市价单处理思路
+             * 1、判断是否买单为市价单
+             * 2、获取卖单列表里面价格最低的撮合成交
+             */
+            var lowestPrice = sellerList.get(sellerList.size() - 1).getTradePrice();
+            for (var i = sellerList.size() - 1; i > -1; i--) {
+                var compareResult = sellerList.get(i).getTradePrice().compareTo(lowestPrice);
+                if (compareResult == -1) {
+                    lowestPrice = sellerList.get(i).getTradePrice();
+                    lowestSeller = sellerList.get(i);
+                    index = i;
+                }
             }
+        } else {
+            /**
+             * 限价单处理思路
+             * 1、获取卖单列表里面价格低于或等于当前最高买单报价的订单
+             */
+            var tempSeller = sellerList.get(sellerList.size() - 1);
+            for (var i = sellerList.size() - 1; i > -1; i--) {
+                var compareResult = sellerList.get(i).getTradePrice().compareTo(tempSeller.getTradePrice());
+                if (compareResult == -1 || compareResult == 0) {
+                    tempSeller = sellerList.get(i);
+                    index = i;
+                }
+            }
+            lowestSeller = tempSeller;
         }
         if (lowestSeller == null) {
             return null;
@@ -249,7 +288,7 @@ public class TradeEngieService implements TradeEngie {
             return;
         }
 
-        var sellTrade = getlowestTradeOrder(buyTrade.getOrder().getTradePrice());
+        var sellTrade = getlowestTradeOrder(buyTrade.getOrder());
         if (sellTrade == null) {
             TRADE_RUN_STATUS.set(TRADE_WAITING.get());
             logger.info("撮合完毕.");
@@ -422,6 +461,9 @@ public class TradeEngieService implements TradeEngie {
         }
     }
 
+    /**
+     * 添加/取消订单循环合并处理
+     */
     void makeOrderHandle() {
         var size = tradeOrderMakeQueue.size();
         if (size == 0) {
@@ -454,6 +496,11 @@ public class TradeEngieService implements TradeEngie {
         this.doTradeOrder();
     }
 
+    /**
+     * 获取买单集合
+     *
+     * @return
+     */
     LinkedList<TradeOrder> getBuyerList() {
         var tradeOrders = new LinkedList<TradeOrder>();
         for (var buyer : buyerList) {
@@ -466,6 +513,11 @@ public class TradeEngieService implements TradeEngie {
         return tradeOrders;
     }
 
+    /**
+     * 获取卖单集合（）
+     *
+     * @return
+     */
     LinkedList<TradeOrder> getSellerList() {
         var tradeOrders = new LinkedList<TradeOrder>();
         for (var buyer : sellerList) {
@@ -478,6 +530,12 @@ public class TradeEngieService implements TradeEngie {
         return tradeOrders;
     }
 
+    /**
+     * 合并相同订单价格
+     *
+     * @param tradeOrders
+     * @return
+     */
     HashMap<BigDecimal, TradeOrder> mergeOrderShow(LinkedList<TradeOrder> tradeOrders) {
         var tempBuyerMaps = new HashMap<BigDecimal, TradeOrder>();
         for (var orders : tradeOrders) {
@@ -553,21 +611,21 @@ public class TradeEngieService implements TradeEngie {
     }
 
     void start() {
-        logger.info("读取历史订单中...");
-        //先拉取系统订单
-        var userOrders = userTradeOrderService.getUserOrders();
-        logger.info("已获取到{}条历史订单.", userOrders.size());
-        for (var order : userOrders) {
-            var tradeOrder = new TradeOrder();
-            tradeOrder.setTradeId(order.getTradeId());
-            tradeOrder.setUserId(order.getUserId());
-            tradeOrder.setBuyer(order.getBuyer() == 1);
-            tradeOrder.setMarketOrder(order.getMarketOrder() == 1);
-            tradeOrder.setTradePrice(order.getTradePrice());
-            tradeOrder.setTradeCount(order.getTradeCount());
-            tradeOrder.setTotalAmount(order.getTradeAmount());
-            tradeOrderMakeQueue.add(tradeOrder);
-        }
+//        logger.info("读取历史订单中...");
+//        //先拉取系统订单
+//        var userOrders = userTradeOrderService.getUserOrders();
+//        logger.info("已获取到{}条历史订单.", userOrders.size());
+//        for (var order : userOrders) {
+//            var tradeOrder = new TradeOrder();
+//            tradeOrder.setTradeId(order.getTradeId());
+//            tradeOrder.setUserId(order.getUserId());
+//            tradeOrder.setBuyer(order.getBuyer() == 1);
+//            tradeOrder.setMarketOrder(order.getMarketOrder() == 1);
+//            tradeOrder.setTradePrice(order.getTradePrice());
+//            tradeOrder.setTradeCount(order.getTradeCount());
+//            tradeOrder.setTotalAmount(order.getTradeAmount());
+//            tradeOrderMakeQueue.add(tradeOrder);
+//        }
 
         //启动核心服务
         new Thread(() -> {

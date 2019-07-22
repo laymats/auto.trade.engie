@@ -20,8 +20,5 @@ public class CoreEngieApplication {
 
     public static void main(String[] args) {
         SpringApplication.run(CoreEngieApplication.class, args);
-
-        TradeEngieService.getService().addStatusEvent(new TradeMarketStatus());
-        TradeEngieService.getService().startEngie();
     }
 }
