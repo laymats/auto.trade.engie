@@ -37,26 +37,55 @@
         .left-buyer, .right-seller li {
             padding-left: 20px;
         }
+
+        .show-status {
+            width: 100%;
+            height: 20px;
+            margin-bottom: 20px;
+            float: left;
+        }
+
+        .show-status div {
+            width: 50%;
+            text-align: center;
+            float: left;
+            height: 30px;
+            border: 1px solid #c5c5c5;
+            padding-top: 5px;
+        }
+
+        .user_account {
+            width: 100%;
+            margin-bottom: 20px;
+            float: left;
+        }
+
+        .user_data {
+            margin-bottom: 20px;
+        }
     </style>
 </head>
 <body>
 
 
 <div class="contentContainer trade-market">
-    <div class="user">
+
+    <div class="show-status">
+        <div id="highPirce">最高价：0</div>
+        <div id="lowPrice">最低价：0</div>
+    </div>
+    <div class="user" style="display: none">
         账号：<input name="userName">
         密码：<input name="userPass">
         <input type="button" value="登录" onclick="tradeEngie.login()">
     </div>
-    <div class="user">
+    <div class="user_account" style="display: none">
+    </div>
+    <div class="user_data">
         价格：<input name="price">
         数量：<input name="amount">
         <input type="button" value="买" onclick="tradeEngie.place(true)">
         <input type="button" value="卖" onclick="tradeEngie.place(false)">
-    </div>
-    <div class="show-status">
-        <div id="highPirce">最高价：0</div>
-        <div id="lowPrice">最低价：0</div>
     </div>
 
     <div class="left-buyer">
@@ -131,7 +160,33 @@
 <script>
     var tradeEngie = {
         start: function () {
+            var _this = this;
+            setInterval(function () {
+                _this.status();
+            }, 500);
             this.tradeMarket();
+        },
+        status: function () {
+            $.ajax({
+                url: "user/account",
+                async: true,
+                type: "POST",
+                contentType: 'application/json;charset=utf-8',
+                dataType: 'json',
+                success: function (data) {
+                    if (data.code == 0) {
+                        $('.user').css('display', 'none');
+                        $('.user_account').css('display', 'block');
+
+                        var user = data.data.user;
+                        var good = data.data.userGood;
+                        $('.user_account').html('可用：' + user.userMoney + ' 冻结：' + user.freezeMoney + ' 牛币：' + good.niuCoin);
+                    } else {
+                        $('.user').css('display', 'block');
+                        $('.user_account').css('display', 'none');
+                    }
+                }
+            });
         },
         login: function () {
             var uname = $('[name="userName"]').val();
@@ -139,14 +194,17 @@
 
             $.ajax({
                 url: "user/login",
-                async: false,
+                async: true,
                 type: "POST",
                 contentType: 'application/json;charset=utf-8',
                 dataType: 'json',
                 data: JSON.stringify({uname: uname, upass: upass}),
                 success: function (data) {
                     if (data.code != 0) {
-                        alert('');
+                        alert(data.msg);
+                    } else {
+                        $('.user').css('display', 'none');
+                        $('.user_account').css('display', 'block');
                     }
                 }
             });
@@ -171,10 +229,10 @@
             for (var i = 0; i < res.trades.length; i++) {
                 var trade = res.trades[i];
                 $('#trade_list').append('<tr>' +
-                    '<td>' + trade.orderTime.split(" ")[1] + '</td>' +
+                    '<td>' + trade.tradeTime.split(' ')[1] + '</td>' +
                     '<td>' + trade.tradePrice + '</td>' +
                     '<td>' + trade.tradeCount + '</td>' +
-                    '<td>' + trade.orderAmount + '</td>' +
+                    '<td>' + trade.tradeAmount + '</td>' +
                     '</tr>');
             }
             for (var i = 0; i < res.buyer.length; i++) {
@@ -205,18 +263,20 @@
                 userId: userid,
                 tradePrice: price,
                 tradeCount: amount,
+                marketOrder: 0,
+                cancel: 0,
                 buyer: buy ? 1 : 0
             };
             $.ajax({
                 url: "trade/new",
-                async: false,
+                async: true,
                 type: "POST",
                 contentType: 'application/json;charset=utf-8',
                 dataType: 'json',
                 data: JSON.stringify(placeOrder),
                 success: function (data) {
                     if (data.code != 0) {
-
+                        alert(data.msg);
                     }
                 }
             });

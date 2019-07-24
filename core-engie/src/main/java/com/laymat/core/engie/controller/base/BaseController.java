@@ -4,6 +4,7 @@ package com.laymat.core.engie.controller.base;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.laymat.core.db.entity.User;
 import com.laymat.core.engie.config.interceptor.RedisSessionConfig;
+import com.laymat.core.engie.trade.TradeEngieService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,6 +21,9 @@ public abstract class BaseController {
 
     @Autowired
     protected HttpServletRequest request;
+
+    @Autowired
+    protected TradeEngieService tradeEngieService;
 
     public User getSession() {
         return (User)new RedisSessionConfig(request).getUserSession();

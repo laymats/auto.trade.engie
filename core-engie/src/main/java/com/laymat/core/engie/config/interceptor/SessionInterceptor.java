@@ -26,7 +26,7 @@ public class SessionInterceptor implements HandlerInterceptor {
         }
 
         var ajaxRequest = request.getHeader("content-type") != null
-                && request.getHeader("content-type").equals("application/json");
+                && request.getHeader("content-type").indexOf("application/json") > -1;
 
         //判断是否为ajax请求
         if (ajaxRequest) {

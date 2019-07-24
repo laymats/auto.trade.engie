@@ -1,5 +1,6 @@
 package com.laymat.core.db.service.impl;
 
+import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.util.IdUtil;
 import com.baomidou.mybatisplus.core.conditions.Wrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
@@ -16,6 +17,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.util.Date;
 import java.util.List;
 
@@ -36,7 +38,20 @@ public class UserTradeOrderServiceImpl implements UserTradeOrderService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public boolean placeOrder(SaveUserOrder userOrder) {
+    public boolean placeOrder(SaveUserOrder saveUserOrder) {
+        var userOrder = new UserTradeOrder();
+        BeanUtil.copyProperties(saveUserOrder, userOrder);
+
+        var checkPrice = saveUserOrder.getTradePrice().compareTo(BigDecimal.ZERO);
+        if (checkPrice == -1 || checkPrice == 0) {
+            throw new SimpleException("价格异常[%s]", saveUserOrder.getTradePrice());
+        }
+
+        var checkCountResult = saveUserOrder.getTradeCount().compareTo(BigDecimal.ZERO);
+        if (checkCountResult == -1 || checkCountResult == 0) {
+            throw new SimpleException("数量异常[%s]", saveUserOrder.getTradeCount());
+        }
+
         userOrder.setTradeId(IdUtil.fastUUID());
         userOrder.setTradeDate(new Date());
         var userInfo = userDao.selectById(userOrder.getUserId());
@@ -65,12 +80,14 @@ public class UserTradeOrderServiceImpl implements UserTradeOrderService {
                 userGoodDao.updateById(userGood);
             }
         }
+
+        saveUserOrder.setTradeId(userOrder.getTradeId());
         return userTradeOrderDao.insert(userOrder) > 0;
     }
 
     @Override
     public List<UserTradeOrder> getUserOrders() {
-        var buyerList = userTradeOrderDao.selectList(new QueryWrapper<>());
+        var buyerList = userTradeOrderDao.selectBuyerList();
         var sellerList = userTradeOrderDao.selectSellerList();
         buyerList.addAll(sellerList);
 

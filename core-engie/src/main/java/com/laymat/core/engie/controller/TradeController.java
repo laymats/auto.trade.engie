@@ -15,6 +15,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import javax.validation.Valid;
+
 /**
  * @author dell
  */
@@ -24,15 +26,15 @@ public class TradeController extends BaseController {
     @Autowired
     UserTradeOrderService userTradeOrderService;
 
-    private TradeEngieService tradeEngieService = TradeEngieService.getService();
-
     @PostMapping("/new")
-    public BaseRestfulResult<Boolean> getUserOrderToPages(@RequestBody SaveUserOrder saveUserOrder) {
+    public BaseRestfulResult<Boolean> getUserOrderToPages(@Valid @RequestBody SaveUserOrder saveUserOrder) {
         saveUserOrder.setUserId(this.getSession().getUserId());
         if (userTradeOrderService.placeOrder(saveUserOrder)) {
             var order = new TradeOrder();
             order.setTradeId(saveUserOrder.getTradeId());
             order.setBuyer(saveUserOrder.getBuyer() == 1);
+            order.setMarketOrder(saveUserOrder.getMarketOrder() == 1);
+            order.setCancel(saveUserOrder.getCancel() == 1);
             order.setTradePrice(saveUserOrder.getTradePrice());
             order.setTradeCount(saveUserOrder.getTradeCount());
             order.setUserId(this.getSession().getUserId());

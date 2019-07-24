@@ -15,9 +15,9 @@ import java.util.List;
  */
 @Repository
 public interface UserTradeOrderDao extends BaseMapper<UserTradeOrder>{
-    @Select("select * from tm_UserTradeOrder where Buyer = 1 order by TradePrice desc")
+    @Select("select * from TM_UserTradeOrder where Buyer = 1 and finishDate is null order by TradePrice desc")
     List<UserTradeOrder> selectBuyerList();
 
-    @Select("select * from tm_UserTradeOrder where Buyer = 0 order by TradePrice asc")
+    @Select("select * from TM_UserTradeOrder where Buyer = 0 and finishDate is null order by TradePrice asc")
     List<UserTradeOrder> selectSellerList();
 }

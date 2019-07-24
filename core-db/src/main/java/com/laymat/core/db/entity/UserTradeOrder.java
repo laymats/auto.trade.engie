@@ -36,7 +36,7 @@ public class UserTradeOrder implements Serializable {
     @TableField("UserId")
     private Integer UserId;
     /**
-     * 交易时间
+     * 交易价格
      */    
     @TableField("TradePrice")
     private BigDecimal TradePrice;

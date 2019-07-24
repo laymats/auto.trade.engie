@@ -30,6 +30,7 @@ public class WebAppConfig implements WebMvcConfigurer {
     public void addInterceptors(InterceptorRegistry registry) {
         var excludePaths = new String[]{
                 "/static/**",
+                "/index.html",
                 "/user/login",
                 //actuator
                 "/actuator/**",

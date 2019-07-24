@@ -1,9 +1,12 @@
 package com.laymat.core.db.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.laymat.core.db.dao.UserGoodDao;
+import com.laymat.core.db.dto.GetUserAccount;
 import com.laymat.core.db.dto.UserLogin;
 import com.laymat.core.db.entity.User;
 import com.laymat.core.db.dao.UserDao;
+import com.laymat.core.db.entity.UserGood;
 import com.laymat.core.db.service.UserService;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,6 +24,8 @@ import java.util.List;
 public class UserServiceImpl implements UserService {
     @Autowired
     private UserDao userDao;
+    @Autowired
+    private UserGoodDao userGoodDao;
 
     @Override
     public User userLogin(UserLogin userLogin) {
@@ -30,7 +35,10 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public User getUserInfo(Integer userId) {
-        return userDao.selectById(userId);
+    public GetUserAccount getUserInfo(Integer userId) {
+        var userAccount = new GetUserAccount();
+        userAccount.setUser(userDao.selectById(userId));
+        userAccount.setUserGood(userGoodDao.selectOne(new QueryWrapper<UserGood>().eq("UserId", userId)));
+        return userAccount;
     }
 }

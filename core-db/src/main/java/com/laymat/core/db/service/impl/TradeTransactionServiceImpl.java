@@ -15,6 +15,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.util.Date;
 
 /**
  * (TmTradetransaction)表服务实现类
@@ -48,41 +49,74 @@ public class TradeTransactionServiceImpl implements TradeTransactionService {
         if (buyer != null && buyerGood != null && seller != null && sellerGood != null) {
 
             /**
-             * 交易处理流程
-             * 买方扣减冻结金额，增加相应购买的商品
-             * 卖方增加可用金额，扣减相应出售的商品
-             *
-             * 买方订单扣减相应下单金额
-             * 卖方订单扣减相应下单数量
+             * 买方交易订单更新
+             * 1、判断交易后的余额
+             * 2、如果余额大于0则表示未交易完，只更新交易时间
+             * 3、如果余额小于0，设置为0，更新完成时间
              */
-            buyer.setFreezeMoney(buyer.getFreezeMoney().subtract(tradeTransaction.getTradeAmount()));
-            buyerGood.setNiuCoin(buyerGood.getNiuCoin().add(tradeTransaction.getTradeCount()));
-            userDao.updateById(buyer);
-            userGoodDao.updateById(buyerGood);
+            var buyerOrder = userTradeOrderDao.selectOne(new QueryWrapper<UserTradeOrder>()
+                    .eq("TradeId", tradeTransaction.getBuyerTradeId()));
+            var buyerSurplusCount = buyerOrder.getTradeCount().subtract(tradeTransaction.getTradeCount());
+            var buyerCompareResult = buyerSurplusCount.compareTo(BigDecimal.ZERO);
 
-            seller.setFreezeMoney(seller.getFreezeMoney().add(tradeTransaction.getTradeAmount()));
-            sellerGood.setNiuCoin(sellerGood.getNiuCoin().subtract(tradeTransaction.getTradeCount()));
-            userDao.updateById(seller);
-            userGoodDao.updateById(sellerGood);
+            if (buyerCompareResult == 1) {
+                buyerOrder.setSurplusCount(buyerSurplusCount);
+            }
+            if (buyerCompareResult == -1) {
+                buyerOrder.setSurplusAmount(BigDecimal.ZERO);
+            }
 
-            var buyerOrder = userTradeOrderDao.selectOne(new QueryWrapper<UserTradeOrder>().eq("TradeId", tradeTransaction.getBuyerId()));
-            buyerOrder.setSurplusAmount(buyerOrder.getTradeAmount().subtract(tradeTransaction.getTradeAmount()));
-            if (buyerOrder.getSurplusAmount().compareTo(BigDecimal.ZERO) == 0) {
+            if (buyerCompareResult == 0 || buyerCompareResult == -1) {
                 buyerOrder.setFinishDate(tradeTransaction.getTradeTime());
-            }else{
+            } else {
                 buyerOrder.setTradeDate(tradeTransaction.getTradeTime());
             }
             userTradeOrderDao.updateById(buyerOrder);
 
-            var sellerOrder = userTradeOrderDao.selectOne(new QueryWrapper<UserTradeOrder>().eq("TradeId", tradeTransaction.getSellerId()));
-            sellerOrder.setSurplusCount(sellerOrder.getTradeCount().subtract(tradeTransaction.getTradeCount()));
-            if (sellerOrder.getSurplusCount().compareTo(BigDecimal.ZERO) == 0) {
+            /**
+             * 卖方交易订单更新
+             */
+            var sellerOrder = userTradeOrderDao.selectOne(new QueryWrapper<UserTradeOrder>().eq("TradeId", tradeTransaction.getSellerTradeId()));
+            var sellerSurplusCount = sellerOrder.getTradeCount().subtract(tradeTransaction.getTradeCount());
+            var sellerCompareResult = sellerSurplusCount.compareTo(BigDecimal.ZERO);
+
+            if (sellerCompareResult == 1) {
+                sellerOrder.setSurplusCount(sellerSurplusCount);
+            }
+            if (sellerCompareResult == -1) {
+                sellerOrder.setSurplusCount(BigDecimal.ZERO);
+            }
+
+            if (sellerCompareResult == 0 || sellerCompareResult == -1) {
                 sellerOrder.setFinishDate(tradeTransaction.getTradeTime());
-            }else{
+            } else {
                 sellerOrder.setTradeDate(tradeTransaction.getTradeTime());
             }
             userTradeOrderDao.updateById(sellerOrder);
 
+            /**
+             * 交易处理流程
+             * 买方扣减冻结金额（买方下单价格*当前交易数量），增加购买的商品
+             * 卖方扣减冻结商品，增加可用金额
+             */
+
+            //扣减冻结金额
+            var deductionFreezeAmount = tradeTransaction.getTradePrice().multiply(tradeTransaction.getTradeCount());
+            //解冻金额
+            var unfreezeAmount = buyerOrder.getTradePrice().multiply(tradeTransaction.getTradeCount()).subtract(deductionFreezeAmount);
+            buyer.setFreezeMoney(buyer.getFreezeMoney().subtract(deductionFreezeAmount));
+            buyer.setUserMoney(buyer.getUserMoney().add(unfreezeAmount));
+
+            buyerGood.setNiuCoin(buyerGood.getNiuCoin().add(tradeTransaction.getTradeCount()));
+            userDao.updateById(buyer);
+            userGoodDao.updateById(buyerGood);
+
+            //sellerGood.setNiuCoin(sellerGood.getNiuCoin().subtract(tradeTransaction.getTradeCount()));
+            seller.setUserMoney(seller.getUserMoney().add(deductionFreezeAmount));
+            userDao.updateById(seller);
+            userGoodDao.updateById(sellerGood);
+
+            tradeTransaction.setTradeTime(new Date());
             return tradeTransactionDao.insert(tradeTransaction) > 0;
         }
         return false;

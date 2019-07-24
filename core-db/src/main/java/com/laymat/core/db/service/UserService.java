@@ -1,5 +1,6 @@
 package com.laymat.core.db.service;
 
+import com.laymat.core.db.dto.GetUserAccount;
 import com.laymat.core.db.dto.UserLogin;
 import com.laymat.core.db.entity.User;
 import com.baomidou.mybatisplus.extension.service.IService;
@@ -14,5 +15,5 @@ import java.util.List;
  */
 public interface UserService {
     User userLogin(UserLogin userLogin);
-    User getUserInfo(Integer userId);
+    GetUserAccount getUserInfo(Integer userId);
 }

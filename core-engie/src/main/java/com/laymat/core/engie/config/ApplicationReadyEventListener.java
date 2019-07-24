@@ -1,17 +1,20 @@
-package com.laymat.core.engie;
+package com.laymat.core.engie.config;
 
 import com.laymat.core.engie.service.TradeMarketStatus;
 import com.laymat.core.engie.trade.TradeEngie;
 import com.laymat.core.engie.trade.TradeEngieService;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.ApplicationListener;
 import org.springframework.stereotype.Component;
 
 @Component
 public class ApplicationReadyEventListener implements ApplicationListener<ApplicationReadyEvent> {
+    @Autowired
+    protected TradeEngieService tradeEngieService;
     @Override
     public void onApplicationEvent(ApplicationReadyEvent applicationReadyEvent) {
-        TradeEngieService.getService().addStatusEvent(new TradeMarketStatus());
-        TradeEngieService.getService().startEngie();
+        tradeEngieService.addStatusEvent(new TradeMarketStatus());
+        tradeEngieService.startEngie();
     }
 }
