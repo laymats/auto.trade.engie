@@ -43,4 +43,8 @@ public class TradeResult {
      * 交易时间
      */
     private Date tradeTime;
+    /**
+     * 是否买单
+     */
+    private Boolean isbuyer;
 }

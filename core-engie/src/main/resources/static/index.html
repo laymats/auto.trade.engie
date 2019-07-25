@@ -158,6 +158,7 @@
     </div>
 </div>
 <script>
+    var userid = 0;
     var tradeEngie = {
         start: function () {
             var _this = this;
@@ -180,6 +181,7 @@
 
                         var user = data.data.user;
                         var good = data.data.userGood;
+                        userid = user.userId;
                         $('.user_account').html('可用：' + user.userMoney + ' 冻结：' + user.freezeMoney + ' 牛币：' + good.niuCoin);
                     } else {
                         $('.user').css('display', 'block');
@@ -255,7 +257,6 @@
             $('#lowPrice').html('最低价：' + res.lowPrice);
         },
         place: function (buy) {
-            var userid = parseInt(Math.random() * 1000000);
             var price = $('[name="price"]').val();
             var amount = $('[name="amount"]').val();
 

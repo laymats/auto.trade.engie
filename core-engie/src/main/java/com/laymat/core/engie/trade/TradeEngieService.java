@@ -570,7 +570,7 @@ public class TradeEngieService extends BaseEngie implements TradeEngie {
         }
 
         var temp = new LinkedList<TradeOrder>();
-        for (var i = buyerOrders.size() - 1; i >= 0; i--) {
+        for (var i = 0; i < buyerOrders.size(); i++) {
             temp.push(buyerOrders.get(i));
         }
         buyerOrders = temp;
