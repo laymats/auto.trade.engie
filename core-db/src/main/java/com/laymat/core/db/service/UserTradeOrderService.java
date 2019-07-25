@@ -1,5 +1,6 @@
 package com.laymat.core.db.service;
 
+import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.laymat.core.db.dto.SaveUserOrder;
 import com.laymat.core.db.entity.UserTradeOrder;
 import com.baomidou.mybatisplus.extension.service.IService;
@@ -23,4 +24,6 @@ public interface UserTradeOrderService {
      * @return
      */
     List<UserTradeOrder> getUserOrders();
+
+    IPage<UserTradeOrder> getUserTradeOrders(Integer userId);
 }
