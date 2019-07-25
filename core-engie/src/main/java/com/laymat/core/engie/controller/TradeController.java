@@ -2,6 +2,7 @@ package com.laymat.core.engie.controller;
 
 
 import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.laymat.core.db.dto.GetUserOrder;
 import com.laymat.core.db.dto.SaveUserOrder;
 import com.laymat.core.db.entity.UserTradeOrder;
 import com.laymat.core.db.service.UserTradeOrderService;
@@ -46,7 +47,7 @@ public class TradeController extends BaseController {
     }
 
     @PostMapping("/user_order")
-    public BaseRestfulResult<IPage<UserTradeOrder>> userTradeOrder() {
+    public BaseRestfulResult<IPage<UserTradeOrder>> userTradeOrder(@RequestBody GetUserOrder getUserOrder) {
         var placeResult = userTradeOrderService.getUserTradeOrders(this.getSession().getUserId());
         return SimpleResult.retMessageFromData(placeResult);
     }
