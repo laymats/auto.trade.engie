@@ -5,6 +5,7 @@ import cn.hutool.core.util.IdUtil;
 import com.baomidou.mybatisplus.core.conditions.Wrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.laymat.core.db.dao.UserDao;
 import com.laymat.core.db.dao.UserGoodDao;
 import com.laymat.core.db.dto.SaveUserOrder;
@@ -97,6 +98,6 @@ public class UserTradeOrderServiceImpl implements UserTradeOrderService {
 
     @Override
     public IPage<UserTradeOrder> getUserTradeOrders(Integer userId) {
-        return userTradeOrderDao.selectPage();
+        return userTradeOrderDao.selectPage(new Page<>(),new QueryWrapper<>());
     }
 }
