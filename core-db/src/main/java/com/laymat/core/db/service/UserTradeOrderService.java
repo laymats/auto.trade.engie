@@ -26,4 +26,6 @@ public interface UserTradeOrderService {
     List<UserTradeOrder> getUserOrders();
 
     IPage<UserTradeOrder> getUserTradeOrders(Integer userId);
+
+    void cancelOrder(String tradeId);
 }

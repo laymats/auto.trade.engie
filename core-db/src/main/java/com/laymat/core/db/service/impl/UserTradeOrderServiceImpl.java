@@ -4,6 +4,7 @@ import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.util.IdUtil;
 import com.baomidou.mybatisplus.core.conditions.Wrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.laymat.core.db.dao.UserDao;
@@ -99,6 +100,44 @@ public class UserTradeOrderServiceImpl implements UserTradeOrderService {
 
     @Override
     public IPage<UserTradeOrder> getUserTradeOrders(Integer userId) {
-        return userTradeOrderDao.selectPage(new Page<>(), new QueryWrapper<>());
+        var warpper = new QueryWrapper<UserTradeOrder>()
+                .eq("UserId", userId)
+                .eq("Cancel", 0);
+        return userTradeOrderDao.selectPage(new Page<>(), warpper);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void cancelOrder(String tradeId) {
+
+        var tradeOrder = userTradeOrderDao.selectOne(new QueryWrapper<UserTradeOrder>().eq("TradeId", tradeId));
+        if (tradeOrder.getBuyer() == 1) {
+            //撤销订单，买单解冻购买金额
+            var userInfo = userDao.selectById(tradeOrder.getUserId());
+            if (tradeOrder.getSurplusAmount().compareTo(BigDecimal.ZERO) != 0) {
+                userInfo.setFreezeMoney(userInfo.getFreezeMoney().subtract(tradeOrder.getSurplusAmount()));
+                userInfo.setUserMoney(userInfo.getUserMoney().add(tradeOrder.getSurplusAmount()));
+            } else {
+                userInfo.setFreezeMoney(userInfo.getFreezeMoney().subtract(tradeOrder.getTradeAmount()));
+                userInfo.setUserMoney(userInfo.getUserMoney().add(tradeOrder.getTradeAmount()));
+            }
+            userDao.updateById(userInfo);
+        } else {
+            //撤销订单，卖单解冻牛币
+            var userGoodInfo = userGoodDao.selectOne(new QueryWrapper<UserGood>().eq("UserId", tradeOrder.getUserId()));
+            if (tradeOrder.getSurplusCount().compareTo(BigDecimal.ZERO) != 0) {
+                userGoodInfo.setFreezeNiuCoin(userGoodInfo.getFreezeNiuCoin().subtract(tradeOrder.getSurplusCount()));
+                userGoodInfo.setNiuCoin(userGoodInfo.getNiuCoin().add(tradeOrder.getSurplusCount()));
+            } else {
+                userGoodInfo.setFreezeNiuCoin(userGoodInfo.getFreezeNiuCoin().subtract(tradeOrder.getTradeCount()));
+                userGoodInfo.setNiuCoin(userGoodInfo.getNiuCoin().add(tradeOrder.getTradeCount()));
+            }
+            userGoodDao.updateById(userGoodInfo);
+        }
+
+        var updateOrder = new UserTradeOrder();
+        updateOrder.setCancel(1);
+        userTradeOrderDao.update(updateOrder, new UpdateWrapper<UserTradeOrder>()
+                .eq("TradeId", tradeId));
     }
 }

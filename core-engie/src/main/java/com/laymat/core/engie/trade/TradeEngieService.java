@@ -366,20 +366,22 @@ public class TradeEngieService extends BaseEngie implements TradeEngie {
         var sellerRemoves = new ArrayList<TradeOrder>();
         for (var cancelOrder : cancelList) {
             for (var buyer : buyerList) {
-                if (cancelOrder.getUserId().compareTo(buyer.getUserId()) == 0 && cancelOrder.getTradePrice().compareTo(buyer.getTradePrice()) == 0) {
+                if (cancelOrder.getTradeId().equals(buyer.getTradeId())) {
                     buyerRemoves.add(buyer);
                 }
             }
             for (var seller : sellerList) {
-                if (cancelOrder.getUserId().compareTo(seller.getUserId()) == 0 && cancelOrder.getTradePrice().compareTo(seller.getTradePrice()) == 0) {
+                if (cancelOrder.getTradeId().equals(seller.getTradeId())) {
                     sellerRemoves.add(seller);
                 }
             }
         }
         for (var buyer : buyerRemoves) {
+            userTradeOrderService.cancelOrder(buyer.getTradeId());
             this.removeBuyOrder(buyer);
         }
         for (var seller : sellerRemoves) {
+            userTradeOrderService.cancelOrder(seller.getTradeId());
             this.removeSellOrder(seller);
         }
         cancelList.clear();
@@ -717,9 +719,9 @@ public class TradeEngieService extends BaseEngie implements TradeEngie {
     public boolean cancelOrder(TradeOrder order) {
         if (RUN_STATUS.get() == SYSTEM_RUNNING.get()) {
             tradeOrderMakeQueue.add(order);
-            return false;
-        } else {
             return true;
+        } else {
+            return false;
         }
     }
 

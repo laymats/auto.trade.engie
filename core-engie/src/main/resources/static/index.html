@@ -22,16 +22,16 @@
         }
 
         .left-buyer {
-            width: 300px;
+            width: 240px;
             height: auto;
             float: left;
         }
 
         .right-seller {
-            width: 300px;
+            width: 240px;
             height: auto;
             float: left;
-            margin-left: 20px;
+            margin-left: 10px;
         }
 
         .left-buyer, .right-seller li {
@@ -179,6 +179,29 @@
                 </div>
             </div>
         </div>
+        <div class="right-seller">
+            <div class="panel panel-default">
+                <div class="panel-heading">
+                    <h3 class="panel-title">
+                        我的订单
+                    </h3>
+                </div>
+                <div class="panel-body">
+                    <table class="table">
+                        <thead>
+                        <tr>
+                            <th>价格</th>
+                            <th>数量</th>
+                            <th>总额</th>
+                            <th>操作</th>
+                        </tr>
+                        </thead>
+                        <tbody id="own_trade_list">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
 <script>
@@ -188,7 +211,7 @@
             var _this = this;
             setInterval(function () {
                 _this.status();
-            }, 500);
+            }, 1500);
             this.tradeMarket();
         },
         status: function () {
@@ -210,6 +233,43 @@
                     } else {
                         $('.user').css('display', 'block');
                         $('.user_account').css('display', 'none');
+                    }
+                }
+            });
+
+            $.ajax({
+                url: "trade/user_order",
+                async: true,
+                type: "POST",
+                contentType: 'application/json;charset=utf-8',
+                dataType: 'json',
+                data: JSON.stringify({}),
+                success: function (res) {
+                    if (res.code == 0) {
+                        $('#own_trade_list').html('');
+                        for (var i = 0; i < res.data.records.length; i++) {
+                            var trade = res.data.records[i];
+                            $('#own_trade_list').append('<tr>' +
+                                '<td>' + trade.tradePrice + '</td>' +
+                                '<td>' + trade.tradeCount + '</td>' +
+                                '<td>' + trade.tradeAmount + '</td>' +
+                                '<td><a href="#" onclick="tradeEngie.cancel(\'' + trade.tradeId + '\')">撤销</a></td>' +
+                                '</tr>');
+                        }
+                    }
+                }
+            });
+        },
+        cancel: function (tradeId) {
+            $.ajax({
+                url: "trade/cancel/" + tradeId,
+                async: true,
+                type: "POST",
+                contentType: 'application/json;charset=utf-8',
+                dataType: 'json',
+                success: function (data) {
+                    if (data.code != 0) {
+                        alert(data.msg);
                     }
                 }
             });
