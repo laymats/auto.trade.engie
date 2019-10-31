@@ -1,8 +1,11 @@
+### JAVA ###
 HELP.md
-target/
+*/target/
+*/deploy/
+*/logs
+*.class
 !.mvn/wrapper/maven-wrapper.jar
-!**/src/main/**
-!**/src/test/**
+*.yml
 
 ### STS ###
 .apt_generated
@@ -25,7 +28,12 @@ target/
 /dist/
 /nbdist/
 /.nb-gradle/
-build/
+/build/
 
 ### VS Code ###
 .vscode/
+
+### git rm -r --cached .
+### git add .
+### git commit -m 'update .gitignore'
+### git push
