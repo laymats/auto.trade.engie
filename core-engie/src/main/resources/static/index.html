@@ -62,6 +62,25 @@
 
         .user_data {
             margin-bottom: 20px;
+            width: 500px;
+            height: auto;
+            float: left;
+        }
+
+        .user_data input {
+            margin-top: 10px;
+            width: 80%;
+        }
+
+        .trade-list {
+            width: 1000px;
+            height: auto;
+            float: left;
+        }
+
+        .bt-trade {
+            text-align: center;
+            margin-left: 42px;
         }
     </style>
 </head>
@@ -82,77 +101,82 @@
     <div class="user_account" style="display: none">
     </div>
     <div class="user_data">
-        价格：<input name="price">
-        数量：<input name="amount">
-        <input type="button" value="买" onclick="tradeEngie.place(true)">
-        <input type="button" value="卖" onclick="tradeEngie.place(false)">
+        价格：<input name="buy_price"><br/>
+        数量：<input name="buy_count"><br/>
+        <input class="bt-trade" type="button" value="买" onclick="tradeEngie.place(true)">
+    </div>
+    <div class="user_data">
+        价格：<input name="sell_price"><br/>
+        数量：<input name="sell_count"><br/>
+        <input class="bt-trade" type="button" value="卖" onclick="tradeEngie.place(false)">
     </div>
 
-    <div class="left-buyer">
-        <div class="panel panel-default">
-            <div class="panel-heading">
-                <h3 class="panel-title">
-                    buyer
-                </h3>
-            </div>
-            <div class="panel-body">
-                <table class="table">
-                    <thead>
-                    <tr>
-                        <th>买价</th>
-                        <th>数量</th>
-                        <th>总额</th>
-                    </tr>
-                    </thead>
-                    <tbody id="buyer_list">
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    </div>
-    <div class="right-seller">
-        <div class="panel panel-default">
-            <div class="panel-heading">
-                <h3 class="panel-title">
-                    seller
-                </h3>
-            </div>
-            <div class="panel-body">
-                <table class="table">
-                    <thead>
-                    <tr>
-                        <th>卖价</th>
-                        <th>数量</th>
-                        <th>总额</th>
-                    </tr>
-                    </thead>
-                    <tbody id="seller_list">
-                    </tbody>
-                </table>
+    <div class="trade-list">
+        <div class="left-buyer">
+            <div class="panel panel-default">
+                <div class="panel-heading">
+                    <h3 class="panel-title">
+                        买单
+                    </h3>
+                </div>
+                <div class="panel-body">
+                    <table class="table">
+                        <thead>
+                        <tr>
+                            <th>买价</th>
+                            <th>数量</th>
+                            <th>总额</th>
+                        </tr>
+                        </thead>
+                        <tbody id="buyer_list">
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
-    </div>
-
-    <div class="right-seller">
-        <div class="panel panel-default">
-            <div class="panel-heading">
-                <h3 class="panel-title">
-                    trade history
-                </h3>
+        <div class="right-seller">
+            <div class="panel panel-default">
+                <div class="panel-heading">
+                    <h3 class="panel-title">
+                        卖单
+                    </h3>
+                </div>
+                <div class="panel-body">
+                    <table class="table">
+                        <thead>
+                        <tr>
+                            <th>卖价</th>
+                            <th>数量</th>
+                            <th>总额</th>
+                        </tr>
+                        </thead>
+                        <tbody id="seller_list">
+                        </tbody>
+                    </table>
+                </div>
             </div>
-            <div class="panel-body">
-                <table class="table">
-                    <thead>
-                    <tr>
-                        <th>时间</th>
-                        <th>价格</th>
-                        <th>数量</th>
-                        <th>总额</th>
-                    </tr>
-                    </thead>
-                    <tbody id="trade_list">
-                    </tbody>
-                </table>
+        </div>
+        <div class="right-seller">
+            <div class="panel panel-default">
+                <div class="panel-heading">
+                    <h3 class="panel-title">
+                        交易历史
+                    </h3>
+                </div>
+                <div class="panel-body">
+                    <table class="table">
+                        <thead>
+                        <tr>
+                            <th>时间</th>
+                            <th>价格</th>
+                            <th>数量</th>
+                            <th>总额</th>
+                        </tr>
+                        </thead>
+                        <tbody id="trade_list">
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
     </div>
@@ -182,7 +206,7 @@
                         var user = data.data.user;
                         var good = data.data.userGood;
                         userid = user.userId;
-                        $('.user_account').html('可用：' + user.userMoney + ' 冻结：' + user.freezeMoney + ' 牛币：' + good.niuCoin);
+                        $('.user_account').html('可用：' + user.userMoney + ' 冻结：' + user.freezeMoney + ' <br/>牛币：' + good.niuCoin + ' 冻结：' + good.freezeNiuCoin);
                     } else {
                         $('.user').css('display', 'block');
                         $('.user_account').css('display', 'none');
@@ -257,13 +281,20 @@
             $('#lowPrice').html('最低价：' + res.lowPrice);
         },
         place: function (buy) {
-            var price = $('[name="price"]').val();
-            var amount = $('[name="amount"]').val();
+            var price = 0;
+            var count = 0;
 
+            if (buy) {
+                price = $('[name="buy_price"]').val();
+                count = $('[name="buy_count"]').val();
+            } else {
+                price = $('[name="sell_price"]').val();
+                count = $('[name="sell_count"]').val();
+            }
             var placeOrder = {
                 userId: userid,
                 tradePrice: price,
-                tradeCount: amount,
+                tradeCount: count,
                 marketOrder: 0,
                 cancel: 0,
                 buyer: buy ? 1 : 0

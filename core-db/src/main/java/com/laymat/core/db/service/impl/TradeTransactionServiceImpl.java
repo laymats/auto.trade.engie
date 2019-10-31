@@ -131,12 +131,14 @@ public class TradeTransactionServiceImpl implements TradeTransactionService {
             var unfreezeAmount = deductionFreezeAmount.subtract(tradeTransaction.getTradeAmount());
             buyer.setFreezeMoney(buyer.getFreezeMoney().subtract(deductionFreezeAmount));
             buyer.setUserMoney(buyer.getUserMoney().add(unfreezeAmount));
-
+            //增加可用牛币
             buyerGood.setNiuCoin(buyerGood.getNiuCoin().add(tradeTransaction.getTradeCount()));
             userDao.updateById(buyer);
             userGoodDao.updateById(buyerGood);
 
-            //sellerGood.setNiuCoin(sellerGood.getNiuCoin().subtract(tradeTransaction.getTradeCount()));
+            //扣减冻结牛币
+            var deductionFreezeCoin = sellerGood.getFreezeNiuCoin().subtract(tradeTransaction.getTradeCount());
+            sellerGood.setFreezeNiuCoin(deductionFreezeCoin);
             seller.setUserMoney(seller.getUserMoney().add(tradeTransaction.getTradeAmount()));
             userDao.updateById(seller);
             userGoodDao.updateById(sellerGood);

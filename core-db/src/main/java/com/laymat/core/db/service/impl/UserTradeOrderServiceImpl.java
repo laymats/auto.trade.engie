@@ -79,6 +79,7 @@ public class UserTradeOrderServiceImpl implements UserTradeOrderService {
                 throw new SimpleException("余币不足[%s]", userGood.getNiuCoin());
             } else {
                 userGood.setNiuCoin(userGood.getNiuCoin().subtract(userOrder.getTradeCount()));
+                userGood.setFreezeNiuCoin(userGood.getFreezeNiuCoin().add(userOrder.getTradeCount()));
                 userGoodDao.updateById(userGood);
             }
         }
@@ -98,6 +99,6 @@ public class UserTradeOrderServiceImpl implements UserTradeOrderService {
 
     @Override
     public IPage<UserTradeOrder> getUserTradeOrders(Integer userId) {
-        return userTradeOrderDao.selectPage(new Page<>(),new QueryWrapper<>());
+        return userTradeOrderDao.selectPage(new Page<>(), new QueryWrapper<>());
     }
 }

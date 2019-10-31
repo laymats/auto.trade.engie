@@ -196,18 +196,6 @@ public class TradeEngieService extends BaseEngie implements TradeEngie {
             }
             tradeResults[0] = tradeResult;
 
-//            var tradeTransaction = new SaveTradeTransaction();
-//            tradeTransaction.setBuyerId(tradeResult.getBuyerId());
-//            tradeTransaction.setSellerId(tradeResult.getSellerId());
-//            tradeTransaction.setTradePrice(tradeResult.getTradePrice());
-//            tradeTransaction.setTradeCount(tradeResult.getTradeCount());
-//            tradeTransaction.setTradeAmount(tradeResult.getTradeAmount());
-//            tradeTransaction.setTradeTime(tradeResult.getTradeTime());
-//            tradeTransaction.setBuyerTradeId(tradeResult.getBuyerTradeId());
-//            tradeTransaction.setSellerTradeId(tradeResult.getSellerTradeId());
-//
-//            tradeTransactionService.saveTradeTransaction(tradeTransaction);
-
             //更新至数据库
             scheduledThreadPoolExecutor.execute(() -> {
                 var tradeTransaction = new SaveTradeTransaction();

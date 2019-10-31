@@ -30,4 +30,7 @@ public class UserGood implements Serializable {
         
     @TableField("NiuCoin")
     private BigDecimal NiuCoin;
+
+    @TableField("FreezeNiuCoin")
+    private BigDecimal FreezeNiuCoin;
 }
