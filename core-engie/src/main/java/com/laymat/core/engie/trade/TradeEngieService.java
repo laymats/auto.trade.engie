@@ -396,21 +396,22 @@ public class TradeEngieService extends BaseEngie implements TradeEngie {
      */
     void addBuyer(TradeOrder order) {
         synchronized (buyerLock) {
-            //检查用户是有存在相同下单信息
-            var checkUserBuyOrderExist = false;
-            for (var buyer : buyerList) {
-                //如果出现新订单用户已下单且下单单价一致的情况下，对订单进行合并操作
-                if (buyer.getUserId().equals(order.getUserId())
-                        && buyer.getTradePrice().equals(order.getTradePrice())) {
-                    var newBuyCount = order.getTradeCount().add(buyer.getTradeCount());
-                    buyer.setTradeCount(newBuyCount);
-                    checkUserBuyOrderExist = true;
-                }
-            }
-
-            if (!checkUserBuyOrderExist) {
-                buyerList.add(order);
-            }
+//            //检查用户是有存在相同下单信息
+//            var checkUserBuyOrderExist = false;
+//            for (var buyer : buyerList) {
+//                //如果出现新订单用户已下单且下单单价一致的情况下，对订单进行合并操作
+//                if (buyer.getUserId().equals(order.getUserId())
+//                        && buyer.getTradePrice().equals(order.getTradePrice())) {
+//                    var newBuyCount = order.getTradeCount().add(buyer.getTradeCount());
+//                    buyer.setTradeCount(newBuyCount);
+//                    checkUserBuyOrderExist = true;
+//                }
+//            }
+//
+//            if (!checkUserBuyOrderExist) {
+//                buyerList.add(order);
+//            }
+            buyerList.add(order);
         }
     }
 
@@ -421,21 +422,22 @@ public class TradeEngieService extends BaseEngie implements TradeEngie {
      */
     void addSeller(TradeOrder order) {
         synchronized (sellerLock) {
-            //检查用户是有存在相同下单信息
-            var checkUserSellOrderExist = false;
-            for (var seller : sellerList) {
-                //如果出现新订单用户已下单且下单单价一致的情况下，对订单进行合并操作
-                if (seller.getUserId().equals(order.getUserId())
-                        && seller.getTradePrice().equals(order.getTradePrice())) {
-                    var newBuyCount = order.getTradeCount().add(seller.getTradeCount());
-                    seller.setTradeCount(newBuyCount);
-                    checkUserSellOrderExist = true;
-                }
-            }
-
-            if (!checkUserSellOrderExist) {
-                sellerList.add(order);
-            }
+//            //检查用户是有存在相同下单信息
+//            var checkUserSellOrderExist = false;
+//            for (var seller : sellerList) {
+//                //如果出现新订单用户已下单且下单单价一致的情况下，对订单进行合并操作
+//                if (seller.getUserId().equals(order.getUserId())
+//                        && seller.getTradePrice().equals(order.getTradePrice())) {
+//                    var newBuyCount = order.getTradeCount().add(seller.getTradeCount());
+//                    seller.setTradeCount(newBuyCount);
+//                    checkUserSellOrderExist = true;
+//                }
+//            }
+//
+//            if (!checkUserSellOrderExist) {
+//                sellerList.add(order);
+//            }
+            sellerList.add(order);
         }
     }
 
