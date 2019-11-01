@@ -103,7 +103,10 @@ public class UserTradeOrderServiceImpl implements UserTradeOrderService {
         var warpper = new QueryWrapper<UserTradeOrder>()
                 .eq("UserId", userId)
                 .eq("Cancel", 0)
-                .isNull("FinishDate");
+                .isNull("FinishDate")
+                .orderByDesc("Id");
+        var page = new Page<>();
+        page.setSize(100);
         return userTradeOrderDao.selectPage(new Page<>(), warpper);
     }
 
@@ -117,12 +120,13 @@ public class UserTradeOrderServiceImpl implements UserTradeOrderService {
             var userInfo = userDao.selectById(tradeOrder.getUserId());
             if (tradeOrder.getSurplusCount().compareTo(BigDecimal.ZERO) != 0) {
                 //减去已成交的
-                var surplusTradeCount = tradeOrder.getSurplusCount();
-                userInfo.setFreezeMoney(userInfo.getFreezeMoney().subtract(surplusTradeCount));
-                userInfo.setUserMoney(userInfo.getUserMoney().add(surplusTradeCount));
+                var surplusTradeMoney = tradeOrder.getSurplusCount().multiply(tradeOrder.getTradePrice());
+                userInfo.setFreezeMoney(userInfo.getFreezeMoney().subtract(surplusTradeMoney));
+                userInfo.setUserMoney(userInfo.getUserMoney().add(surplusTradeMoney));
             } else {
-                userInfo.setFreezeMoney(userInfo.getFreezeMoney().subtract(tradeOrder.getTradeCount()));
-                userInfo.setUserMoney(userInfo.getUserMoney().add(tradeOrder.getTradeCount()));
+                var surplusTradeMoney = tradeOrder.getTradeCount().multiply(tradeOrder.getTradePrice());
+                userInfo.setFreezeMoney(userInfo.getFreezeMoney().subtract(surplusTradeMoney));
+                userInfo.setUserMoney(userInfo.getUserMoney().add(surplusTradeMoney));
             }
             userDao.updateById(userInfo);
         } else {
