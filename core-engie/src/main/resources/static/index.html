@@ -6,29 +6,25 @@
     <script src="https://cdn.staticfile.org/jquery/1.10.2/jquery.min.js"></script>
     <link rel="stylesheet" href="https://cdn.staticfile.org/twitter-bootstrap/3.3.7/css/bootstrap.min.css">
     <style>
-        .show-order {
-
-        }
-
         li {
             text-decoration: none;
             list-style: none;
         }
 
         .trade-market {
-            width: 1000px;
+            width: 1200px;
             height: auto;
             margin: 100px auto;
         }
 
         .left-buyer {
-            width: 240px;
+            width: 280px;
             height: auto;
             float: left;
         }
 
         .right-seller {
-            width: 240px;
+            width: 280px;
             height: auto;
             float: left;
             margin-left: 10px;
@@ -73,7 +69,7 @@
         }
 
         .trade-list {
-            width: 1000px;
+            width: 1200px;
             height: auto;
             float: left;
         }
@@ -110,7 +106,6 @@
         数量：<input name="sell_count"><br/>
         <input class="bt-trade" type="button" value="卖" onclick="tradeEngie.place(false)">
     </div>
-
     <div class="trade-list">
         <div class="left-buyer">
             <div class="panel panel-default">
@@ -134,7 +129,7 @@
                 </div>
             </div>
         </div>
-        <div class="right-seller">
+        <div class="right-seller" style="width: 300px;">
             <div class="panel panel-default">
                 <div class="panel-heading">
                     <h3 class="panel-title">
@@ -190,8 +185,10 @@
                     <table class="table">
                         <thead>
                         <tr>
+                            <th>类型</th>
                             <th>价格</th>
-                            <th>数量</th>
+                            <th>已成交</th>
+                            <th>剩余</th>
                             <th>总额</th>
                             <th>操作</th>
                         </tr>
@@ -249,12 +246,20 @@
                         $('#own_trade_list').html('');
                         for (var i = 0; i < res.data.records.length; i++) {
                             var trade = res.data.records[i];
-                            $('#own_trade_list').append('<tr>' +
+                            var color = '';
+                            if (trade.buyer == 1) {
+                                color = '<td style="color: green">买</td>';
+                            } else {
+                                color = '<td style="color: red">卖</td>';
+                            }
+                            $('#own_trade_list').append('<tr>' + color +
                                 '<td>' + trade.tradePrice + '</td>' +
-                                '<td>' + trade.tradeCount + '</td>' +
+                                '<td>' + (trade.surplusCount != 0 ? (trade.tradeCount - trade.surplusCount).toFixed(3) : trade.tradeCount) + '</td>' +
+                                '<td>' + (trade.surplusCount == 0 ? trade.tradeCount : trade.surplusCount) + '</td>' +
                                 '<td>' + trade.tradeAmount + '</td>' +
                                 '<td><a href="#" onclick="tradeEngie.cancel(\'' + trade.tradeId + '\')">撤销</a></td>' +
-                                '</tr>');
+                                '</tr>'
+                            )
                         }
                     }
                 }

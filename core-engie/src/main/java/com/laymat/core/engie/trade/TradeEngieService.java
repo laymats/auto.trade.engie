@@ -309,6 +309,7 @@ public class TradeEngieService extends BaseEngie implements TradeEngie {
             logger.info("T2:购买单价{}，购买数量{}，订单总额{}", tradePrice, tradeCount, finalTradeTotalAmount);
 
             buyTrade.getOrder().setTradeCount(finalTradeCount);
+            buyTrade.getOrder().setTotalAmount(buyTrade.getOrder().getTradePrice().multiply(finalTradeCount));
             this.removeSellOrder(sellTrade.getOrder());
             this.updateBuyOrder(buyTrade.getIndex(), buyTrade.getOrder());
         }
@@ -324,6 +325,7 @@ public class TradeEngieService extends BaseEngie implements TradeEngie {
             logger.info("T3:购买单价{}，购买数量{}，订单总额{}", tradePrice, tradeCount, finalTradeTotalAmount);
 
             sellTrade.getOrder().setTradeCount(finalTradeCount);
+            sellTrade.getOrder().setTotalAmount(sellTrade.getOrder().getTradePrice().multiply(finalTradeCount));
             this.removeBuyOrder(buyTrade.getOrder());
             this.updateSellOrder(sellTrade.getIndex(), sellTrade.getOrder());
         }
@@ -615,7 +617,12 @@ public class TradeEngieService extends BaseEngie implements TradeEngie {
             tradeOrder.setBuyer(order.getBuyer() == 1);
             tradeOrder.setMarketOrder(order.getMarketOrder() == 1);
             tradeOrder.setTradePrice(order.getTradePrice());
-            tradeOrder.setTradeCount(order.getTradeCount());
+
+            if (order.getSurplusCount().compareTo(BigDecimal.ZERO) == 0) {
+                tradeOrder.setTradeCount(order.getTradeCount());
+            } else {
+                tradeOrder.setTradeCount(order.getSurplusCount());
+            }
             tradeOrder.setTotalAmount(order.getTradeAmount());
             this.placeOrder(tradeOrder);
         }

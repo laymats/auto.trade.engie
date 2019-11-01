@@ -102,7 +102,8 @@ public class UserTradeOrderServiceImpl implements UserTradeOrderService {
     public IPage<UserTradeOrder> getUserTradeOrders(Integer userId) {
         var warpper = new QueryWrapper<UserTradeOrder>()
                 .eq("UserId", userId)
-                .eq("Cancel", 0);
+                .eq("Cancel", 0)
+                .isNull("FinishDate");
         return userTradeOrderDao.selectPage(new Page<>(), warpper);
     }
 
@@ -112,22 +113,26 @@ public class UserTradeOrderServiceImpl implements UserTradeOrderService {
 
         var tradeOrder = userTradeOrderDao.selectOne(new QueryWrapper<UserTradeOrder>().eq("TradeId", tradeId));
         if (tradeOrder.getBuyer() == 1) {
-            //撤销订单，买单解冻购买金额
+            //撤销订单，买单解冻购买金额（减去已成交的）
             var userInfo = userDao.selectById(tradeOrder.getUserId());
-            if (tradeOrder.getSurplusAmount().compareTo(BigDecimal.ZERO) != 0) {
-                userInfo.setFreezeMoney(userInfo.getFreezeMoney().subtract(tradeOrder.getSurplusAmount()));
-                userInfo.setUserMoney(userInfo.getUserMoney().add(tradeOrder.getSurplusAmount()));
+            if (tradeOrder.getSurplusCount().compareTo(BigDecimal.ZERO) != 0) {
+                //减去已成交的
+                var surplusTradeCount = tradeOrder.getSurplusCount();
+                userInfo.setFreezeMoney(userInfo.getFreezeMoney().subtract(surplusTradeCount));
+                userInfo.setUserMoney(userInfo.getUserMoney().add(surplusTradeCount));
             } else {
-                userInfo.setFreezeMoney(userInfo.getFreezeMoney().subtract(tradeOrder.getTradeAmount()));
-                userInfo.setUserMoney(userInfo.getUserMoney().add(tradeOrder.getTradeAmount()));
+                userInfo.setFreezeMoney(userInfo.getFreezeMoney().subtract(tradeOrder.getTradeCount()));
+                userInfo.setUserMoney(userInfo.getUserMoney().add(tradeOrder.getTradeCount()));
             }
             userDao.updateById(userInfo);
         } else {
-            //撤销订单，卖单解冻牛币
+            //撤销订单，卖单解冻牛币（减去已成交的）
             var userGoodInfo = userGoodDao.selectOne(new QueryWrapper<UserGood>().eq("UserId", tradeOrder.getUserId()));
             if (tradeOrder.getSurplusCount().compareTo(BigDecimal.ZERO) != 0) {
-                userGoodInfo.setFreezeNiuCoin(userGoodInfo.getFreezeNiuCoin().subtract(tradeOrder.getSurplusCount()));
-                userGoodInfo.setNiuCoin(userGoodInfo.getNiuCoin().add(tradeOrder.getSurplusCount()));
+                //减去已成交的
+                var surplusTradeCount = tradeOrder.getSurplusCount();
+                userGoodInfo.setFreezeNiuCoin(userGoodInfo.getFreezeNiuCoin().subtract(surplusTradeCount));
+                userGoodInfo.setNiuCoin(userGoodInfo.getNiuCoin().add(surplusTradeCount));
             } else {
                 userGoodInfo.setFreezeNiuCoin(userGoodInfo.getFreezeNiuCoin().subtract(tradeOrder.getTradeCount()));
                 userGoodInfo.setNiuCoin(userGoodInfo.getNiuCoin().add(tradeOrder.getTradeCount()));
