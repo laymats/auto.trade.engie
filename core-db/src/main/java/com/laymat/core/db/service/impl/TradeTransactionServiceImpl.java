@@ -43,13 +43,11 @@ public class TradeTransactionServiceImpl implements TradeTransactionService {
         //获取买方/卖方信息
         var buyer = userDao.selectById(tradeTransaction.getBuyerId());
         var buyerGood = userGoodDao.selectOne(new QueryWrapper<UserGood>().eq("UserId", buyer.getUserId()));
-        var seller = userDao.selectById(tradeTransaction.getSellerId());
-        var sellerGood = userGoodDao.selectOne(new QueryWrapper<UserGood>().eq("UserId", seller.getUserId()));
 
         /**
          * 10元买9元卖，出现冻结不恢复
          */
-        if (buyer != null && buyerGood != null && seller != null && sellerGood != null) {
+        if (buyer != null && buyerGood != null) {
 
             /**
              * 买方交易订单更新
@@ -67,8 +65,8 @@ public class TradeTransactionServiceImpl implements TradeTransactionService {
              */
             if (buyerSurplusCount.compareTo(BigDecimal.ZERO) != 0) {
                 buyerSurplusCount = buyerSurplusCount.subtract(tradeTransaction.getTradeCount());
-            }else{
-                buyerSurplusCount =  buyerOrder.getTradeCount().subtract(tradeTransaction.getTradeCount());
+            } else {
+                buyerSurplusCount = buyerOrder.getTradeCount().subtract(tradeTransaction.getTradeCount());
             }
 
             var buyerCompareResult = buyerSurplusCount.compareTo(BigDecimal.ZERO);
@@ -99,8 +97,8 @@ public class TradeTransactionServiceImpl implements TradeTransactionService {
              */
             if (sellerSurplusCount.compareTo(BigDecimal.ZERO) != 0) {
                 sellerSurplusCount = sellerSurplusCount.subtract(tradeTransaction.getTradeCount());
-            }else{
-                sellerSurplusCount =  sellerOrder.getTradeCount().subtract(tradeTransaction.getTradeCount());
+            } else {
+                sellerSurplusCount = sellerOrder.getTradeCount().subtract(tradeTransaction.getTradeCount());
             }
 
             var sellerCompareResult = sellerSurplusCount.compareTo(BigDecimal.ZERO);
@@ -121,24 +119,27 @@ public class TradeTransactionServiceImpl implements TradeTransactionService {
 
             /**
              * 交易处理流程
-             * 买方扣减冻结金额（买方下单价格*当前交易数量），增加购买的商品
-             * 卖方扣减冻结商品，增加可用金额
+             * 买方扣减冻结金额（买方价格*交易数量），增加购买的商品
+             * 卖方扣减冻结牛币，增加可用金额（成交金额）
              */
 
             //扣减冻结金额
-            var deductionFreezeAmount = buyerOrder.getTradePrice().multiply(tradeTransaction.getTradeCount());
-            //解冻金额
-            var unfreezeAmount = deductionFreezeAmount.subtract(tradeTransaction.getTradeAmount());
-            buyer.setFreezeMoney(buyer.getFreezeMoney().subtract(deductionFreezeAmount));
-            buyer.setUserMoney(buyer.getUserMoney().add(unfreezeAmount));
+            var deductionFreezeMoney = buyer.getFreezeMoney().subtract(buyerOrder.getTradePrice().multiply(tradeTransaction.getTradeCount()));
+            buyer.setFreezeMoney(deductionFreezeMoney);
+            //恢复多余金额
+            buyer.setUserMoney(buyer.getUserMoney().add(buyerOrder.getTradeAmount().subtract(tradeTransaction.getTradeAmount())));
             //增加可用牛币
             buyerGood.setNiuCoin(buyerGood.getNiuCoin().add(tradeTransaction.getTradeCount()));
             userDao.updateById(buyer);
             userGoodDao.updateById(buyerGood);
 
+            var seller = userDao.selectById(tradeTransaction.getSellerId());
+            var sellerGood = userGoodDao.selectOne(new QueryWrapper<UserGood>().eq("UserId", seller.getUserId()));
+
             //扣减冻结牛币
             var deductionFreezeCoin = sellerGood.getFreezeNiuCoin().subtract(tradeTransaction.getTradeCount());
             sellerGood.setFreezeNiuCoin(deductionFreezeCoin);
+            //增加可用金额
             seller.setUserMoney(seller.getUserMoney().add(tradeTransaction.getTradeAmount()));
             userDao.updateById(seller);
             userGoodDao.updateById(sellerGood);

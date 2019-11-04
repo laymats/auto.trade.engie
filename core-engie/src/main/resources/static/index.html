@@ -254,7 +254,7 @@
                             }
                             $('#own_trade_list').append('<tr>' + color +
                                 '<td>' + trade.tradePrice + '</td>' +
-                                '<td>' + (trade.surplusCount != 0 ? (trade.tradeCount - trade.surplusCount).toFixed(3) : trade.tradeCount) + '</td>' +
+                                '<td>' + (trade.surplusCount != 0 ? (trade.tradeCount - trade.surplusCount).toFixed(3) : 0) + '</td>' +
                                 '<td>' + (trade.surplusCount == 0 ? trade.tradeCount : trade.surplusCount) + '</td>' +
                                 '<td>' + trade.tradeAmount + '</td>' +
                                 '<td><a href="#" onclick="tradeEngie.cancel(\'' + trade.tradeId + '\')">撤销</a></td>' +

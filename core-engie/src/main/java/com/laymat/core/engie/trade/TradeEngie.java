@@ -9,6 +9,7 @@ import jdk.jfr.Event;
 import java.util.List;
 
 public interface TradeEngie {
+    boolean running();
     boolean startEngie();
     boolean stopEngie();
     boolean placeOrder(TradeOrder order);

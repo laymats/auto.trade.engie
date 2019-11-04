@@ -62,7 +62,7 @@ public class ConfigRequestAdvice implements RequestBodyAdvice {
         /**
          * 输出请求参数
          */
-        logger.info("请求Controller{}.{}:{}", method.getDeclaringClass().getSimpleName(), method.getName(), gson.toJson(object));
+        //logger.info("请求Controller{}.{}:{}", method.getDeclaringClass().getSimpleName(), method.getName(), gson.toJson(object));
         return object;
     }
 

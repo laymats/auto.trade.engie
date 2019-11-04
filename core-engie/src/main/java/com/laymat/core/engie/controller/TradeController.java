@@ -28,6 +28,10 @@ public class TradeController extends BaseController {
 
     @PostMapping("/new")
     public BaseRestfulResult<Boolean> newTradeOrder(@Valid @RequestBody SaveUserOrder saveUserOrder) {
+        if (!tradeEngieService.running()) {
+            return SimpleResult.retMessageFromBoolean(false);
+        }
+
         saveUserOrder.setUserId(this.getSession().getUserId());
         if (userTradeOrderService.placeOrder(saveUserOrder)) {
             var order = new TradeOrder();

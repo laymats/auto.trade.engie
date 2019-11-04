@@ -197,19 +197,31 @@ public class TradeEngieService extends BaseEngie implements TradeEngie {
             tradeResults[0] = tradeResult;
 
             //更新至数据库
-            scheduledThreadPoolExecutor.execute(() -> {
-                var tradeTransaction = new SaveTradeTransaction();
-                tradeTransaction.setBuyerId(tradeResult.getBuyerId());
-                tradeTransaction.setSellerId(tradeResult.getSellerId());
-                tradeTransaction.setTradePrice(tradeResult.getTradePrice());
-                tradeTransaction.setTradeCount(tradeResult.getTradeCount());
-                tradeTransaction.setTradeAmount(tradeResult.getTradeAmount());
-                tradeTransaction.setTradeTime(tradeResult.getTradeTime());
-                tradeTransaction.setBuyerTradeId(tradeResult.getBuyerTradeId());
-                tradeTransaction.setSellerTradeId(tradeResult.getSellerTradeId());
+//            scheduledThreadPoolExecutor.execute(() -> {
+//                var tradeTransaction = new SaveTradeTransaction();
+//                tradeTransaction.setBuyerId(tradeResult.getBuyerId());
+//                tradeTransaction.setSellerId(tradeResult.getSellerId());
+//                tradeTransaction.setTradePrice(tradeResult.getTradePrice());
+//                tradeTransaction.setTradeCount(tradeResult.getTradeCount());
+//                tradeTransaction.setTradeAmount(tradeResult.getTradeAmount());
+//                tradeTransaction.setTradeTime(tradeResult.getTradeTime());
+//                tradeTransaction.setBuyerTradeId(tradeResult.getBuyerTradeId());
+//                tradeTransaction.setSellerTradeId(tradeResult.getSellerTradeId());
+//
+//                tradeTransactionService.saveTradeTransaction(tradeTransaction);
+//            });
 
-                tradeTransactionService.saveTradeTransaction(tradeTransaction);
-            });
+            var tradeTransaction = new SaveTradeTransaction();
+            tradeTransaction.setBuyerId(tradeResult.getBuyerId());
+            tradeTransaction.setSellerId(tradeResult.getSellerId());
+            tradeTransaction.setTradePrice(tradeResult.getTradePrice());
+            tradeTransaction.setTradeCount(tradeResult.getTradeCount());
+            tradeTransaction.setTradeAmount(tradeResult.getTradeAmount());
+            tradeTransaction.setTradeTime(tradeResult.getTradeTime());
+            tradeTransaction.setBuyerTradeId(tradeResult.getBuyerTradeId());
+            tradeTransaction.setSellerTradeId(tradeResult.getSellerTradeId());
+
+            tradeTransactionService.saveTradeTransaction(tradeTransaction);
         }
     }
 
@@ -263,6 +275,11 @@ public class TradeEngieService extends BaseEngie implements TradeEngie {
      * 订单撮合
      */
     void doTradeOrder() {
+        if (RUN_STATUS.get() == SYSTEM_STOPING.get()) {
+            RUN_STATUS.set(SYSTEM_STOP.get());
+            TRADE_RUN_STATUS.set(TRADE_STOP.get());
+            return;
+        }
         TRADE_RUN_STATUS.set(TRADE_RUNNING.get());
         //撮合双方交易
         var buyTrade = getHighTradeOrder();
@@ -637,7 +654,7 @@ public class TradeEngieService extends BaseEngie implements TradeEngie {
                     TimeUnit.MILLISECONDS.sleep(10);
                     this.makeOrderHandle();
                 } catch (Exception e) {
-                    logger.error("TS1:{}", e.getMessage());
+                    logger.error("TS1:{}", e);
                     continue;
                 }
             }
@@ -650,7 +667,7 @@ public class TradeEngieService extends BaseEngie implements TradeEngie {
                     this.makeBuyOrderShow();
                     this.makeSellOrderShow();
                 } catch (Exception e) {
-                    logger.error("TS2:{}", e.getMessage());
+                    logger.error("TS2:{}", e);
                     continue;
                 }
             }
@@ -662,11 +679,16 @@ public class TradeEngieService extends BaseEngie implements TradeEngie {
                     TimeUnit.MILLISECONDS.sleep(300);
                     this.makeTradeMarket();
                 } catch (Exception e) {
-                    logger.error("TS3:{}", e.getMessage());
+                    logger.error("TS3:{}", e);
                     continue;
                 }
             }
         }).start();
+    }
+
+    @Override
+    public boolean running() {
+        return RUN_STATUS.get() == SYSTEM_RUNNING.get();
     }
 
     @Override
@@ -695,6 +717,7 @@ public class TradeEngieService extends BaseEngie implements TradeEngie {
                     e.printStackTrace();
                 }
             }
+            RUN_STATUS.set(SYSTEM_STOP.get());
             logger.info("撮合引擎停止成功.");
             return true;
         } else {
