@@ -1,6 +1,6 @@
 ### JAVA ###
 HELP.md
-target/*
+*/target/*
 */logs
 *.class
 !.mvn/wrapper/maven-wrapper.jar
