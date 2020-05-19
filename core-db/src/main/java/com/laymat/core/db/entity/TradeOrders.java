@@ -18,8 +18,8 @@ import lombok.Data;
  * @since 2019-07-19 16:49:23
  */
 @Data
-@TableName("TM_UserTradeOrder")
-public class UserTradeOrder implements Serializable {
+@TableName("tm_trade_order")
+public class TradeOrders implements Serializable {
 
     private static final long serialVersionUID = 710467493094263557L;
         
@@ -85,4 +85,9 @@ public class UserTradeOrder implements Serializable {
      */    
     @TableField("Cancel")
     private Integer Cancel;
+    /**
+     * 撤销时间
+     */
+    @TableField("CancelTime")
+    private Date CancelTime;
 }

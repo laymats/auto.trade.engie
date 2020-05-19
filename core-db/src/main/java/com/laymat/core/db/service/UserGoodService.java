@@ -1,9 +1,5 @@
 package com.laymat.core.db.service;
 
-import com.laymat.core.db.entity.UserGood;
-import com.baomidou.mybatisplus.extension.service.IService;
-import java.util.List;
-
 /**
  * (TmUsergood)表服务接口
  *

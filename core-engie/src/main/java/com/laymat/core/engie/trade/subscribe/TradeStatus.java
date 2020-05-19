@@ -1,5 +1,6 @@
 package com.laymat.core.engie.trade.subscribe;
 
+import com.laymat.core.db.dto.GetUserAccount;
 import com.laymat.core.engie.trade.order.TradeOrder;
 import com.laymat.core.engie.trade.order.TradeResult;
 import lombok.Data;
@@ -22,4 +23,5 @@ public class TradeStatus {
     private LinkedList<TradeOrder> buyer;
     private LinkedList<TradeOrder> seller;
     private TradeResult[] trades;
+    private GetUserAccount account;
 }

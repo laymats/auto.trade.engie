@@ -2,8 +2,8 @@ package com.laymat.core.db.service;
 
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.laymat.core.db.dto.SaveUserOrder;
-import com.laymat.core.db.entity.UserTradeOrder;
-import com.baomidou.mybatisplus.extension.service.IService;
+import com.laymat.core.db.entity.TradeOrders;
+
 import java.util.List;
 
 /**
@@ -23,9 +23,9 @@ public interface UserTradeOrderService {
      * 获取未交易的订单
      * @return
      */
-    List<UserTradeOrder> getUserOrders();
+    List<TradeOrders> getUserOrders();
 
-    IPage<UserTradeOrder> getUserTradeOrders(Integer userId);
+    IPage<TradeOrders> getUserTradeOrders(Integer userId);
 
     void cancelOrder(String tradeId);
 }

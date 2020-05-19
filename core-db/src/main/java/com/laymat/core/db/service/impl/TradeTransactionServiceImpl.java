@@ -7,7 +7,7 @@ import com.laymat.core.db.dao.UserGoodDao;
 import com.laymat.core.db.dao.UserTradeOrderDao;
 import com.laymat.core.db.dto.SaveTradeTransaction;
 import com.laymat.core.db.entity.UserGood;
-import com.laymat.core.db.entity.UserTradeOrder;
+import com.laymat.core.db.entity.TradeOrders;
 import com.laymat.core.db.service.TradeTransactionService;
 import com.laymat.core.db.utils.SimpleSNBuilder;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -55,9 +55,10 @@ public class TradeTransactionServiceImpl implements TradeTransactionService {
              * 2、如果余额大于0则表示未交易完，只更新交易时间
              * 3、如果余额小于0，设置为0，更新完成时间
              */
-            var buyerOrder = userTradeOrderDao.selectOne(new QueryWrapper<UserTradeOrder>()
+            var buyerOrder = userTradeOrderDao.selectOne(new QueryWrapper<TradeOrders>()
                     .eq("TradeId", tradeTransaction.getBuyerTradeId()));
             var buyerSurplusCount = buyerOrder.getSurplusCount();
+            var buyerSurplusAmount = buyerOrder.getSurplusAmount();
 
             /**
              * 1、订单如果是第一次交易，使用订单数量减去交易数量，得到剩余数量
@@ -69,15 +70,13 @@ public class TradeTransactionServiceImpl implements TradeTransactionService {
                 buyerSurplusCount = buyerOrder.getTradeCount().subtract(tradeTransaction.getTradeCount());
             }
 
+            buyerSurplusAmount =
+                    buyerSurplusAmount.subtract(tradeTransaction.getTradeCount().multiply(buyerOrder.getTradePrice()));
+
+            buyerOrder.setSurplusCount(buyerSurplusCount);
+            buyerOrder.setSurplusAmount(buyerSurplusAmount);
+
             var buyerCompareResult = buyerSurplusCount.compareTo(BigDecimal.ZERO);
-
-            if (buyerCompareResult == 1) {
-                buyerOrder.setSurplusCount(buyerSurplusCount);
-            }
-            if (buyerCompareResult == -1) {
-                buyerOrder.setSurplusAmount(BigDecimal.ZERO);
-            }
-
             if (buyerCompareResult == 0 || buyerCompareResult == -1) {
                 buyerOrder.setFinishDate(tradeTransaction.getTradeTime());
             } else {
@@ -88,7 +87,8 @@ public class TradeTransactionServiceImpl implements TradeTransactionService {
             /**
              * 卖方交易订单更新
              */
-            var sellerOrder = userTradeOrderDao.selectOne(new QueryWrapper<UserTradeOrder>().eq("TradeId", tradeTransaction.getSellerTradeId()));
+            var sellerOrder = userTradeOrderDao.selectOne(new QueryWrapper<TradeOrders>().eq("TradeId",
+                    tradeTransaction.getSellerTradeId()));
             var sellerSurplusCount = sellerOrder.getSurplusCount();
 
             /**
@@ -101,15 +101,11 @@ public class TradeTransactionServiceImpl implements TradeTransactionService {
                 sellerSurplusCount = sellerOrder.getTradeCount().subtract(tradeTransaction.getTradeCount());
             }
 
+
+            sellerOrder.setSurplusAmount(sellerSurplusCount.multiply(sellerOrder.getTradePrice()));
+            sellerOrder.setSurplusCount(sellerSurplusCount);
+
             var sellerCompareResult = sellerSurplusCount.compareTo(BigDecimal.ZERO);
-
-            if (sellerCompareResult == 1) {
-                sellerOrder.setSurplusCount(sellerSurplusCount);
-            }
-            if (sellerCompareResult == -1) {
-                sellerOrder.setSurplusCount(BigDecimal.ZERO);
-            }
-
             if (sellerCompareResult == 0 || sellerCompareResult == -1) {
                 sellerOrder.setFinishDate(tradeTransaction.getTradeTime());
             } else {
@@ -124,10 +120,14 @@ public class TradeTransactionServiceImpl implements TradeTransactionService {
              */
 
             //扣减冻结金额
-            var deductionFreezeMoney = buyer.getFreezeMoney().subtract(buyerOrder.getTradePrice().multiply(tradeTransaction.getTradeCount()));
+            var deductionFreezeMoney =
+                    buyer.getFreezeMoney().subtract(buyerOrder.getTradePrice().multiply(tradeTransaction.getTradeCount()));
             buyer.setFreezeMoney(deductionFreezeMoney);
+
+            //核心逻辑，（买方价格-卖方价格)*交易金额即为解冻金额
+            var addMoney = buyerOrder.getTradePrice().subtract(tradeTransaction.getTradePrice()).multiply(tradeTransaction.getTradeCount());
             //恢复多余金额
-            buyer.setUserMoney(buyer.getUserMoney().add(buyerOrder.getTradeAmount().subtract(tradeTransaction.getTradeAmount())));
+            buyer.setUserMoney(buyer.getUserMoney().add(addMoney));
             //增加可用牛币
             buyerGood.setNiuCoin(buyerGood.getNiuCoin().add(tradeTransaction.getTradeCount()));
             userDao.updateById(buyer);

@@ -29,7 +29,6 @@ public class SimpleResult<T> extends BaseRestfulResult {
      * 提示授权失效
      */
     public static final BaseRestfulResult AUTHOR_FAIL = new SimpleResult(11000, "授权失效，请重新授权", null);
-    public static final BaseRestfulResult AGENT_AUTHOR_FAIL = new SimpleResult(11000, "经纪人授权失效，请重新授权", null);
     /**
      * 提示绑定手机号码
      */

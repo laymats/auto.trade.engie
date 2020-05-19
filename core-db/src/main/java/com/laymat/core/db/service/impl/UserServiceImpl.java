@@ -12,8 +12,6 @@ import com.laymat.core.db.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.util.List;
-
 /**
  * (TmUser)表服务实现类
  *

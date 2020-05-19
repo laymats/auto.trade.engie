@@ -1,30 +1,18 @@
 package com.laymat.core.engie.trade;
 
-import cn.hutool.core.util.RandomUtil;
 import com.laymat.core.db.dto.SaveTradeTransaction;
-import com.laymat.core.db.entity.TradeTransaction;
-import com.laymat.core.db.entity.UserTradeOrder;
-import com.laymat.core.db.service.TradeTransactionService;
-import com.laymat.core.db.service.UserTradeOrderService;
-import com.laymat.core.db.service.impl.TradeTransactionServiceImpl;
-import com.laymat.core.db.service.impl.UserTradeOrderServiceImpl;
+import com.laymat.core.db.entity.TradeOrders;
 import com.laymat.core.engie.trade.base.BaseEngie;
 import com.laymat.core.engie.trade.order.TradeOrder;
 import com.laymat.core.engie.trade.order.TradeResult;
 import com.laymat.core.engie.trade.subscribe.TradeMarketSubscribe;
 import com.laymat.core.engie.trade.subscribe.TradeStatus;
 import lombok.Data;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
 import java.util.*;
 import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.ScheduledThreadPoolExecutor;
-import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -61,14 +49,13 @@ public class TradeEngieService extends BaseEngie implements TradeEngie {
     /**
      * 系统核心数据相关
      */
-    private static volatile LinkedBlockingQueue<TradeOrder> tradeOrderMakeQueue = new LinkedBlockingQueue<>();
+    private static volatile LinkedBlockingQueue<TradeOrder> tradeOrdersMakeQueue = new LinkedBlockingQueue<>();
     private static volatile LinkedList<TradeOrder> buyerList = new LinkedList<>();
     private static volatile LinkedList<TradeOrder> sellerList = new LinkedList<>();
     private static volatile LinkedList<TradeOrder> cancelList = new LinkedList<>();
     private static volatile Object buyerLock = new Object();
     private static volatile Object sellerLock = new Object();
     private static volatile Object cancelLock = new Object();
-    private static ThreadPoolExecutor scheduledThreadPoolExecutor = new ScheduledThreadPoolExecutor(20);
 
     /**
      * 输出数据
@@ -413,21 +400,6 @@ public class TradeEngieService extends BaseEngie implements TradeEngie {
      */
     void addBuyer(TradeOrder order) {
         synchronized (buyerLock) {
-//            //检查用户是有存在相同下单信息
-//            var checkUserBuyOrderExist = false;
-//            for (var buyer : buyerList) {
-//                //如果出现新订单用户已下单且下单单价一致的情况下，对订单进行合并操作
-//                if (buyer.getUserId().equals(order.getUserId())
-//                        && buyer.getTradePrice().equals(order.getTradePrice())) {
-//                    var newBuyCount = order.getTradeCount().add(buyer.getTradeCount());
-//                    buyer.setTradeCount(newBuyCount);
-//                    checkUserBuyOrderExist = true;
-//                }
-//            }
-//
-//            if (!checkUserBuyOrderExist) {
-//                buyerList.add(order);
-//            }
             buyerList.add(order);
         }
     }
@@ -439,21 +411,6 @@ public class TradeEngieService extends BaseEngie implements TradeEngie {
      */
     void addSeller(TradeOrder order) {
         synchronized (sellerLock) {
-//            //检查用户是有存在相同下单信息
-//            var checkUserSellOrderExist = false;
-//            for (var seller : sellerList) {
-//                //如果出现新订单用户已下单且下单单价一致的情况下，对订单进行合并操作
-//                if (seller.getUserId().equals(order.getUserId())
-//                        && seller.getTradePrice().equals(order.getTradePrice())) {
-//                    var newBuyCount = order.getTradeCount().add(seller.getTradeCount());
-//                    seller.setTradeCount(newBuyCount);
-//                    checkUserSellOrderExist = true;
-//                }
-//            }
-//
-//            if (!checkUserSellOrderExist) {
-//                sellerList.add(order);
-//            }
             sellerList.add(order);
         }
     }
@@ -473,7 +430,7 @@ public class TradeEngieService extends BaseEngie implements TradeEngie {
      * 添加/取消订单循环合并处理
      */
     void makeOrderHandle() {
-        var size = tradeOrderMakeQueue.size();
+        var size = tradeOrdersMakeQueue.size();
         if (size == 0) {
             return;
         }
@@ -486,7 +443,7 @@ public class TradeEngieService extends BaseEngie implements TradeEngie {
         var buyCount = 0;
         var sellCount = 0;
         for (var i = 0; i < size; i++) {
-            var tradeOrder = tradeOrderMakeQueue.poll();
+            var tradeOrder = tradeOrdersMakeQueue.poll();
             if (tradeOrder.isCancel()) {
                 this.addCancelOrder(tradeOrder);
             } else {
@@ -673,13 +630,13 @@ public class TradeEngieService extends BaseEngie implements TradeEngie {
             }
         }).start();
         new Thread(() -> {
-            logger.info("交易市场信息推送已启动.");
+            logger.info("市场交易信息推送已启动.");
             while (true) {
                 try {
                     TimeUnit.MILLISECONDS.sleep(300);
                     this.makeTradeMarket();
                 } catch (Exception e) {
-                    logger.error("TS3:{}", e);
+                    logger.error("TS2:{}", e);
                     continue;
                 }
             }
@@ -740,7 +697,7 @@ public class TradeEngieService extends BaseEngie implements TradeEngie {
             }
 
             order.setTotalAmount(order.getTradePrice().multiply(order.getTradeCount()));
-            tradeOrderMakeQueue.add(order);
+            tradeOrdersMakeQueue.add(order);
             return true;
         } else {
             return false;
@@ -750,7 +707,7 @@ public class TradeEngieService extends BaseEngie implements TradeEngie {
     @Override
     public boolean cancelOrder(TradeOrder order) {
         if (RUN_STATUS.get() == SYSTEM_RUNNING.get()) {
-            tradeOrderMakeQueue.add(order);
+            tradeOrdersMakeQueue.add(order);
             return true;
         } else {
             return false;

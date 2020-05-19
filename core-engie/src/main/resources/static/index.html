@@ -204,14 +204,12 @@
 <script>
     var userid = 0;
     var tradeEngie = {
+        ws: null,
         start: function () {
+
             var _this = this;
-            setInterval(function () {
-                _this.status();
-            }, 1000);
-            this.tradeMarket();
-        },
-        status: function () {
+            _this.tradeMarket();
+
             $.ajax({
                 url: "user/account",
                 async: true,
@@ -220,13 +218,12 @@
                 dataType: 'json',
                 success: function (data) {
                     if (data.code == 0) {
-                        $('.user').css('display', 'none');
-                        $('.user_account').css('display', 'block');
-
-                        var user = data.data.user;
-                        var good = data.data.userGood;
-                        userid = user.userId;
-                        $('.user_account').html('可用：' + user.userMoney + ' 冻结：' + user.freezeMoney + ' <br/>牛币：' + good.niuCoin + ' 冻结：' + good.freezeNiuCoin);
+                        var accountPushTick = setInterval(function () {
+                            if (_this.ws.readyState == 1) {
+                                _this.ws.send('account-' + data.data.user.userId);
+                                clearInterval(accountPushTick);
+                            }
+                        }, 100);
                     } else {
                         $('.user').css('display', 'block');
                         $('.user_account').css('display', 'none');
@@ -234,36 +231,26 @@
                 }
             });
 
-            $.ajax({
-                url: "trade/user_order",
-                async: true,
-                type: "POST",
-                contentType: 'application/json;charset=utf-8',
-                dataType: 'json',
-                data: JSON.stringify({}),
-                success: function (res) {
-                    if (res.code == 0) {
-                        $('#own_trade_list').html('');
-                        for (var i = 0; i < res.data.records.length; i++) {
-                            var trade = res.data.records[i];
-                            var color = '';
-                            if (trade.buyer == 1) {
-                                color = '<td style="color: green">买</td>';
-                            } else {
-                                color = '<td style="color: red">卖</td>';
-                            }
-                            $('#own_trade_list').append('<tr>' + color +
-                                '<td>' + trade.tradePrice + '</td>' +
-                                '<td>' + (trade.surplusCount != 0 ? (trade.tradeCount - trade.surplusCount).toFixed(3) : 0) + '</td>' +
-                                '<td>' + (trade.surplusCount == 0 ? trade.tradeCount : trade.surplusCount) + '</td>' +
-                                '<td>' + trade.tradeAmount + '</td>' +
-                                '<td><a href="#" onclick="tradeEngie.cancel(\'' + trade.tradeId + '\')">撤销</a></td>' +
-                                '</tr>'
-                            )
-                        }
-                    }
+        },
+        showOrders: function (res) {
+            $('#own_trade_list').html('');
+            for (var i = 0; i < res.records.length; i++) {
+                var trade = res.records[i];
+                var color = '';
+                if (trade.Buyer == 1) {
+                    color = '<td style="color: green">买</td>';
+                } else {
+                    color = '<td style="color: red">卖</td>';
                 }
-            });
+                $('#own_trade_list').append('<tr>' + color +
+                    '<td>' + trade.TradePrice + '</td>' +
+                    '<td>' + (trade.SurplusCount != 0 ? (trade.TradeCount - trade.SurplusCount).toFixed(3) : 0) + '</td>' +
+                    '<td>' + (trade.SurplusCount == 0 ? trade.TradeCount : trade.SurplusCount) + '</td>' +
+                    '<td>' + trade.SurplusAmount + '</td>' +
+                    '<td><a href="#" onclick="tradeEngie.cancel(\'' + trade.TradeId + '\')">撤销</a></td>' +
+                    '</tr>'
+                )
+            }
         },
         cancel: function (tradeId) {
             $.ajax({
@@ -283,6 +270,7 @@
             var uname = $('[name="userName"]').val();
             var upass = $('[name="userPass"]').val();
 
+            var _this = this;
             $.ajax({
                 url: "user/login",
                 async: true,
@@ -296,20 +284,35 @@
                     } else {
                         $('.user').css('display', 'none');
                         $('.user_account').css('display', 'block');
+                        _this.ws.send('token-' + data.data.UserId);
                     }
                 }
             });
         },
         tradeMarket: function () {
             var _this = this;
-            var ws = new WebSocket("ws://" + location.host + "/trade/market/123");
-            ws.onopen = function (ev) {
+            _this.ws = new WebSocket("ws://" + location.host + "/trade/market/123");
+            _this.ws.onopen = function (ev) {
                 console.log('start trade market ...');
             }
-            ws.onmessage = function (ev) {
+            _this.ws.onmessage = function (ev) {
                 //console.log('ws message ' + ev.data);
                 if (!JSON.parse(ev.data).status) {
-                    _this.tradeData(JSON.parse(ev.data))
+                    var message = JSON.parse(ev.data);
+                    if (message.type == 'trade') {
+                        _this.tradeData(message.data)
+                    }
+                    if (message.type == 'account') {
+                        var account = message.data;
+                        $('.user').css('display', 'none');
+                        $('.user_account').css('display', 'block');
+
+                        var user = account.user;
+                        var good = account.userGood;
+                        $('.user_account').html('可用：' + user.UserMoney + ' 冻结：' + user.FreezeMoney + ' <br/>牛币：' + good.NiuCoin + ' 冻结：' + good.FreezeNiuCoin);
+                        var orders = message.orders;
+                        _this.showOrders(orders);
+                    }
                 }
             }
         },

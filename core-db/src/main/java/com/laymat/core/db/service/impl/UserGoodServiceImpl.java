@@ -1,12 +1,10 @@
 package com.laymat.core.db.service.impl;
 
-import com.laymat.core.db.entity.UserGood;
 import com.laymat.core.db.dao.UserGoodDao;
 import com.laymat.core.db.service.UserGoodService;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import java.util.List;
 
 /**
  * (TmUsergood)表服务实现类

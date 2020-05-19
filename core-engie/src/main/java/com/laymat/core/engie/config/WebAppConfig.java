@@ -1,7 +1,11 @@
 package com.laymat.core.engie.config;
 
+import com.laymat.core.db.service.UserService;
+import com.laymat.core.db.service.UserTradeOrderService;
 import com.laymat.core.engie.config.interceptor.RequestInterceptor;
 import com.laymat.core.engie.config.interceptor.SessionInterceptor;
+import com.laymat.core.engie.service.TradeMarketService;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.format.FormatterRegistry;
@@ -23,6 +27,11 @@ import java.util.List;
  */
 @Configuration
 public class WebAppConfig implements WebMvcConfigurer {
+    @Autowired
+    UserService userService;
+    @Autowired
+    UserTradeOrderService userTradeOrderService;
+
     /**
      * 注册 拦截器
      */
@@ -86,5 +95,11 @@ public class WebAppConfig implements WebMvcConfigurer {
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", addcorsConfig());
         return new CorsFilter(source);
+    }
+
+    @Bean
+    public void init() {
+        TradeMarketService.userService = this.userService;
+        TradeMarketService.userTradeOrderService = this.userTradeOrderService;
     }
 }

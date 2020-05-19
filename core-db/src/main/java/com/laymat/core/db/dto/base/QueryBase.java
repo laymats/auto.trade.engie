@@ -3,6 +3,7 @@ package com.laymat.core.db.dto.base;
 import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 
 /**
  * 统一分页查询dto
@@ -10,6 +11,7 @@ import lombok.Data;
  * @author dell
  */
 @Data
+@EqualsAndHashCode(callSuper = true)
 public class QueryBase extends BaseUserSession {
     private Integer size;
     private Integer page;

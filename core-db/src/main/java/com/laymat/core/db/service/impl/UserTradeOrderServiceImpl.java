@@ -2,7 +2,6 @@ package com.laymat.core.db.service.impl;
 
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.util.IdUtil;
-import com.baomidou.mybatisplus.core.conditions.Wrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
@@ -11,7 +10,7 @@ import com.laymat.core.db.dao.UserDao;
 import com.laymat.core.db.dao.UserGoodDao;
 import com.laymat.core.db.dto.SaveUserOrder;
 import com.laymat.core.db.entity.UserGood;
-import com.laymat.core.db.entity.UserTradeOrder;
+import com.laymat.core.db.entity.TradeOrders;
 import com.laymat.core.db.dao.UserTradeOrderDao;
 import com.laymat.core.db.service.UserTradeOrderService;
 
@@ -42,7 +41,7 @@ public class UserTradeOrderServiceImpl implements UserTradeOrderService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public boolean placeOrder(SaveUserOrder saveUserOrder) {
-        var userOrder = new UserTradeOrder();
+        var userOrder = new TradeOrders();
         BeanUtil.copyProperties(saveUserOrder, userOrder);
 
         var checkPrice = saveUserOrder.getTradePrice().compareTo(BigDecimal.ZERO);
@@ -86,11 +85,13 @@ public class UserTradeOrderServiceImpl implements UserTradeOrderService {
         }
 
         saveUserOrder.setTradeId(userOrder.getTradeId());
+        userOrder.setSurplusCount(saveUserOrder.getTradeCount());
+        userOrder.setSurplusAmount(saveUserOrder.getTradeCount().multiply(saveUserOrder.getTradePrice()));
         return userTradeOrderDao.insert(userOrder) > 0;
     }
 
     @Override
-    public List<UserTradeOrder> getUserOrders() {
+    public List<TradeOrders> getUserOrders() {
         var buyerList = userTradeOrderDao.selectBuyerList();
         var sellerList = userTradeOrderDao.selectSellerList();
         buyerList.addAll(sellerList);
@@ -99,8 +100,8 @@ public class UserTradeOrderServiceImpl implements UserTradeOrderService {
     }
 
     @Override
-    public IPage<UserTradeOrder> getUserTradeOrders(Integer userId) {
-        var warpper = new QueryWrapper<UserTradeOrder>()
+    public IPage<TradeOrders> getUserTradeOrders(Integer userId) {
+        var warpper = new QueryWrapper<TradeOrders>()
                 .eq("UserId", userId)
                 .eq("Cancel", 0)
                 .isNull("FinishDate")
@@ -113,40 +114,27 @@ public class UserTradeOrderServiceImpl implements UserTradeOrderService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void cancelOrder(String tradeId) {
-
-        var tradeOrder = userTradeOrderDao.selectOne(new QueryWrapper<UserTradeOrder>().eq("TradeId", tradeId));
+        var tradeOrder = userTradeOrderDao.selectOne(new QueryWrapper<TradeOrders>().eq("TradeId", tradeId));
         if (tradeOrder.getBuyer() == 1) {
             //撤销订单，买单解冻购买金额（减去已成交的）
             var userInfo = userDao.selectById(tradeOrder.getUserId());
-            if (tradeOrder.getSurplusCount().compareTo(BigDecimal.ZERO) != 0) {
-                //减去已成交的
-                var surplusTradeMoney = tradeOrder.getSurplusCount().multiply(tradeOrder.getTradePrice());
-                userInfo.setFreezeMoney(userInfo.getFreezeMoney().subtract(surplusTradeMoney));
-                userInfo.setUserMoney(userInfo.getUserMoney().add(surplusTradeMoney));
-            } else {
-                var surplusTradeMoney = tradeOrder.getTradeCount().multiply(tradeOrder.getTradePrice());
-                userInfo.setFreezeMoney(userInfo.getFreezeMoney().subtract(surplusTradeMoney));
-                userInfo.setUserMoney(userInfo.getUserMoney().add(surplusTradeMoney));
-            }
+            userInfo.setFreezeMoney(userInfo.getFreezeMoney().subtract(tradeOrder.getSurplusAmount()));
+            userInfo.setUserMoney(userInfo.getUserMoney().add(tradeOrder.getSurplusAmount()));
             userDao.updateById(userInfo);
         } else {
             //撤销订单，卖单解冻牛币（减去已成交的）
             var userGoodInfo = userGoodDao.selectOne(new QueryWrapper<UserGood>().eq("UserId", tradeOrder.getUserId()));
-            if (tradeOrder.getSurplusCount().compareTo(BigDecimal.ZERO) != 0) {
-                //减去已成交的
-                var surplusTradeCount = tradeOrder.getSurplusCount();
-                userGoodInfo.setFreezeNiuCoin(userGoodInfo.getFreezeNiuCoin().subtract(surplusTradeCount));
-                userGoodInfo.setNiuCoin(userGoodInfo.getNiuCoin().add(surplusTradeCount));
-            } else {
-                userGoodInfo.setFreezeNiuCoin(userGoodInfo.getFreezeNiuCoin().subtract(tradeOrder.getTradeCount()));
-                userGoodInfo.setNiuCoin(userGoodInfo.getNiuCoin().add(tradeOrder.getTradeCount()));
-            }
+            userGoodInfo.setFreezeNiuCoin(userGoodInfo.getFreezeNiuCoin().subtract(tradeOrder.getSurplusCount()));
+            userGoodInfo.setNiuCoin(userGoodInfo.getNiuCoin().add(tradeOrder.getSurplusCount()));
             userGoodDao.updateById(userGoodInfo);
         }
 
-        var updateOrder = new UserTradeOrder();
+        var updateOrder = new TradeOrders();
         updateOrder.setCancel(1);
-        userTradeOrderDao.update(updateOrder, new UpdateWrapper<UserTradeOrder>()
+        updateOrder.setCancelTime(new Date());
+        updateOrder.setSurplusCount(BigDecimal.ZERO);
+        updateOrder.setSurplusAmount(BigDecimal.ZERO);
+        userTradeOrderDao.update(updateOrder, new UpdateWrapper<TradeOrders>()
                 .eq("TradeId", tradeId));
     }
 }

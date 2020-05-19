@@ -18,7 +18,7 @@ import lombok.Data;
  * @since 2019-07-19 15:58:39
  */
 @Data
-@TableName("TM_TradeTransaction")
+@TableName("tm_trade_transaction")
 public class TradeTransaction implements Serializable {
 
     private static final long serialVersionUID = -60653277281661227L;

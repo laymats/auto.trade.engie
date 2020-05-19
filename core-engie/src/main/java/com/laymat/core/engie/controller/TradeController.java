@@ -4,18 +4,16 @@ package com.laymat.core.engie.controller;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.laymat.core.db.dto.GetUserOrder;
 import com.laymat.core.db.dto.SaveUserOrder;
-import com.laymat.core.db.entity.UserTradeOrder;
+import com.laymat.core.db.entity.TradeOrders;
 import com.laymat.core.db.service.UserTradeOrderService;
 import com.laymat.core.db.utils.result.BaseRestfulResult;
 import com.laymat.core.db.utils.result.impl.SimpleResult;
 import com.laymat.core.engie.controller.base.BaseController;
-import com.laymat.core.engie.trade.TradeEngieService;
 import com.laymat.core.engie.trade.order.TradeOrder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 import javax.validation.Valid;
-import java.util.List;
 
 /**
  * @author dell
@@ -51,14 +49,14 @@ public class TradeController extends BaseController {
     }
 
     @PostMapping("/user_order")
-    public BaseRestfulResult<IPage<UserTradeOrder>> userTradeOrder(@RequestBody GetUserOrder getUserOrder) {
+    public BaseRestfulResult<IPage<TradeOrders>> userTradeOrder(@RequestBody GetUserOrder getUserOrder) {
         var placeResult = userTradeOrderService.getUserTradeOrders(this.getSession().getUserId());
         return SimpleResult.retMessageFromData(placeResult);
     }
 
     @PostMapping("/cancel/{tradeId}")
     public BaseRestfulResult<Boolean> cancelTradeOrder(@PathVariable String tradeId) {
-        var order = new TradeOrder();
+        var order = new com.laymat.core.engie.trade.order.TradeOrder();
         order.setTradeId(tradeId);
         order.setCancel(true);
         var placeResult = tradeEngieService.cancelOrder(order);
