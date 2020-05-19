@@ -284,7 +284,12 @@
                     } else {
                         $('.user').css('display', 'none');
                         $('.user_account').css('display', 'block');
-                        _this.ws.send('token-' + data.data.UserId);
+                        var accountPushTick = setInterval(function () {
+                            if (_this.ws.readyState == 1) {
+                                _this.ws.send('account-' + data.data.userId);
+                                clearInterval(accountPushTick);
+                            }
+                        }, 100);
                     }
                 }
             });
