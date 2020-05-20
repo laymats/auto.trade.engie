@@ -1,7 +1,6 @@
 package com.laymat.core.engie.trade;
 
 import com.laymat.core.db.dto.SaveTradeTransaction;
-import com.laymat.core.db.entity.TradeOrders;
 import com.laymat.core.engie.trade.base.BaseEngie;
 import com.laymat.core.engie.trade.order.TradeOrder;
 import com.laymat.core.engie.trade.order.TradeResult;
@@ -23,8 +22,6 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 @Component
 public class TradeEngieService extends BaseEngie implements TradeEngie {
-    private static volatile Object tradeEngieServiceLock = new Object();
-    private static volatile TradeEngieService tradeEngieService = null;
     /**
      * 系统运行状态
      */
@@ -636,7 +633,7 @@ public class TradeEngieService extends BaseEngie implements TradeEngie {
                     TimeUnit.MILLISECONDS.sleep(300);
                     this.makeTradeMarket();
                 } catch (Exception e) {
-                    logger.error("TS2:{}", e);
+                    logger.error("TS3:{}", e);
                     continue;
                 }
             }
