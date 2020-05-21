@@ -46,5 +46,5 @@ public class TradeResult {
     /**
      * 是否买单
      */
-    private Boolean isbuyer;
+    private Boolean isBuyer;
 }

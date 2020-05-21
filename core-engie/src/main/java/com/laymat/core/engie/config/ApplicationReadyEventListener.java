@@ -20,6 +20,6 @@ public class ApplicationReadyEventListener implements ApplicationListener<Applic
         tradeEngieService.addStatusEvent(new TradeMarketStatus());
         tradeEngieService.startEngie();
 
-        robotService.start();
+        //robotService.start();
     }
 }

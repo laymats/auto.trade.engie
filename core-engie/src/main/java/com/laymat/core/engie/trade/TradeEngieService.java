@@ -184,31 +184,32 @@ public class TradeEngieService extends BaseEngie implements TradeEngie {
             tradeResults[0] = tradeResult;
 
             //更新至数据库
-            scheduledThreadPoolExecutor.execute(() -> {
-                var tradeTransaction = new SaveTradeTransaction();
-                tradeTransaction.setBuyerId(tradeResult.getBuyerId());
-                tradeTransaction.setSellerId(tradeResult.getSellerId());
-                tradeTransaction.setTradePrice(tradeResult.getTradePrice());
-                tradeTransaction.setTradeCount(tradeResult.getTradeCount());
-                tradeTransaction.setTradeAmount(tradeResult.getTradeAmount());
-                tradeTransaction.setTradeTime(tradeResult.getTradeTime());
-                tradeTransaction.setBuyerTradeId(tradeResult.getBuyerTradeId());
-                tradeTransaction.setSellerTradeId(tradeResult.getSellerTradeId());
-
-                tradeTransactionService.saveTradeTransaction(tradeTransaction);
-            });
-
-//            var tradeTransaction = new SaveTradeTransaction();
-//            tradeTransaction.setBuyerId(tradeResult.getBuyerId());
-//            tradeTransaction.setSellerId(tradeResult.getSellerId());
-//            tradeTransaction.setTradePrice(tradeResult.getTradePrice());
-//            tradeTransaction.setTradeCount(tradeResult.getTradeCount());
-//            tradeTransaction.setTradeAmount(tradeResult.getTradeAmount());
-//            tradeTransaction.setTradeTime(tradeResult.getTradeTime());
-//            tradeTransaction.setBuyerTradeId(tradeResult.getBuyerTradeId());
-//            tradeTransaction.setSellerTradeId(tradeResult.getSellerTradeId());
+//            scheduledThreadPoolExecutor.execute(() -> {
+//                var tradeTransaction = new SaveTradeTransaction();
+//                tradeTransaction.setIsBuyer(tradeResult.getIsBuyer());
+//                tradeTransaction.setBuyerId(tradeResult.getBuyerId());
+//                tradeTransaction.setSellerId(tradeResult.getSellerId());
+//                tradeTransaction.setTradePrice(tradeResult.getTradePrice());
+//                tradeTransaction.setTradeCount(tradeResult.getTradeCount());
+//                tradeTransaction.setTradeAmount(tradeResult.getTradeAmount());
+//                tradeTransaction.setTradeTime(tradeResult.getTradeTime());
+//                tradeTransaction.setBuyerTradeId(tradeResult.getBuyerTradeId());
+//                tradeTransaction.setSellerTradeId(tradeResult.getSellerTradeId());
 //
-//            tradeTransactionService.saveTradeTransaction(tradeTransaction);
+//                tradeTransactionService.saveTradeTransaction(tradeTransaction);
+//            });
+
+            var tradeTransaction = new SaveTradeTransaction();
+            tradeTransaction.setBuyerId(tradeResult.getBuyerId());
+            tradeTransaction.setSellerId(tradeResult.getSellerId());
+            tradeTransaction.setTradePrice(tradeResult.getTradePrice());
+            tradeTransaction.setTradeCount(tradeResult.getTradeCount());
+            tradeTransaction.setTradeAmount(tradeResult.getTradeAmount());
+            tradeTransaction.setTradeTime(tradeResult.getTradeTime());
+            tradeTransaction.setBuyerTradeId(tradeResult.getBuyerTradeId());
+            tradeTransaction.setSellerTradeId(tradeResult.getSellerTradeId());
+
+            tradeTransactionService.saveTradeTransaction(tradeTransaction);
         }
     }
 
@@ -283,6 +284,8 @@ public class TradeEngieService extends BaseEngie implements TradeEngie {
             return;
         }
 
+        var buyDirection = buyTrade.getOrder().getTradeDate()
+                .compareTo(sellTrade.getOrder().getTradeDate()) == 1;
         var tradeResult = new TradeResult();
         var compareResult = buyTrade.getOrder().getTradeCount().compareTo(sellTrade.getOrder().getTradeCount());
         var finalTradeTotalAmount = BigDecimal.ZERO;
@@ -341,6 +344,7 @@ public class TradeEngieService extends BaseEngie implements TradeEngie {
         tradeResult.setTradePrice(tradePrice);
         tradeResult.setTradeCount(tradeCount);
         tradeResult.setTradeAmount(finalTradeTotalAmount);
+        tradeResult.setIsBuyer(buyDirection);
         tradeResult.setTradeTime(new Date());
 
         //初始化
@@ -469,7 +473,7 @@ public class TradeEngieService extends BaseEngie implements TradeEngie {
      */
     LinkedList<TradeOrder> getBuyerList() {
         var tradeOrders = new LinkedList<TradeOrder>();
-        var tempList = (LinkedList<TradeOrder>)buyerList.clone();
+        var tempList = (LinkedList<TradeOrder>) buyerList.clone();
         if (tempList != null) {
             for (var buyer : tempList) {
                 var tradeOrder = new TradeOrder();
@@ -489,7 +493,7 @@ public class TradeEngieService extends BaseEngie implements TradeEngie {
      */
     LinkedList<TradeOrder> getSellerList() {
         var tradeOrders = new LinkedList<TradeOrder>();
-        var tempList = (LinkedList<TradeOrder>)sellerList.clone();
+        var tempList = (LinkedList<TradeOrder>) sellerList.clone();
         if (tempList != null) {
             for (var buyer : tempList) {
                 var tradeOrder = new TradeOrder();
@@ -703,6 +707,7 @@ public class TradeEngieService extends BaseEngie implements TradeEngie {
                 return false;
             }
 
+            order.setTradeDate(new Date());
             order.setTotalAmount(order.getTradePrice().multiply(order.getTradeCount()));
             tradeOrdersMakeQueue.add(order);
             return true;

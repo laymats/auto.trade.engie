@@ -120,15 +120,17 @@ public class TradeTransactionServiceImpl implements TradeTransactionService {
              * 卖方扣减冻结牛币，增加可用金额（成交金额）
              */
 
+            //核心逻辑，（买方价格-卖方价格)*交易金额即为解冻金额
+            var addMoney = buyerOrder.getTradePrice().subtract(tradeTransaction.getTradePrice()).multiply(tradeTransaction.getTradeCount());
+
             //扣减冻结金额
             var deductionFreezeMoney =
                     buyer.getFreezeMoney().subtract(buyerOrder.getTradePrice().multiply(tradeTransaction.getTradeCount()));
             buyer.setFreezeMoney(deductionFreezeMoney);
 
-            //核心逻辑，（买方价格-卖方价格)*交易金额即为解冻金额
-            var addMoney = buyerOrder.getTradePrice().subtract(tradeTransaction.getTradePrice()).multiply(tradeTransaction.getTradeCount());
             //恢复多余金额
             buyer.setUserMoney(buyer.getUserMoney().add(addMoney));
+
             //增加可用牛币
             buyerGood.setNiuCoin(buyerGood.getNiuCoin().add(tradeTransaction.getTradeCount()));
             userDao.updateById(buyer);

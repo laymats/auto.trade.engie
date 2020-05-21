@@ -45,6 +45,9 @@ public class TradeTransaction implements Serializable {
         
     @TableField("TradeAmount")
     private BigDecimal TradeAmount;
+
+    @TableField("IsBuyer")
+    private Boolean isBuyer;
         
     @TableField("TradeTime")
     private Date TradeTime;
