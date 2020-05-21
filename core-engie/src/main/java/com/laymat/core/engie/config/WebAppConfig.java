@@ -42,6 +42,7 @@ public class WebAppConfig implements WebMvcConfigurer {
                 "/index.html",
                 "/user/login",
                 //actuator
+                "/api/**",
                 "/actuator/**",
                 //swagger exclude
                 "/webjars/**",

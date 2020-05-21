@@ -5,12 +5,10 @@ import cn.hutool.core.codec.Base64;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.session.data.redis.config.annotation.web.http.EnableRedisHttpSession;
 
 import javax.servlet.http.HttpServletRequest;
 
 @Configuration
-@EnableRedisHttpSession(maxInactiveIntervalInSeconds = 60 * 60 * 24)
 public class RedisSessionConfig {
     protected Logger logger = LoggerFactory.getLogger(getClass());
     private HttpServletRequest request;

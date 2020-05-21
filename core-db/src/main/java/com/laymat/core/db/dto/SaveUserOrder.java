@@ -17,17 +17,13 @@ public class SaveUserOrder implements Serializable {
     @JsonIgnore
     private String TradeId;
     /**
-     * 交易时间
+     * 交易价格
      */
     private BigDecimal TradePrice;
     /**
      * 交易数量
      */
     private BigDecimal TradeCount;
-    /**
-     * 总交易金额
-     */
-    private BigDecimal TradeAmount;
     /**
      * 是否买单
      */

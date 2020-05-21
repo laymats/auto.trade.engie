@@ -66,12 +66,13 @@ public class TradeTransactionServiceImpl implements TradeTransactionService {
              */
             if (buyerSurplusCount.compareTo(BigDecimal.ZERO) != 0) {
                 buyerSurplusCount = buyerSurplusCount.subtract(tradeTransaction.getTradeCount());
+                buyerSurplusAmount =
+                        buyerSurplusAmount.subtract(tradeTransaction.getTradeCount().multiply(buyerOrder.getTradePrice()));
             } else {
                 buyerSurplusCount = buyerOrder.getTradeCount().subtract(tradeTransaction.getTradeCount());
+                buyerSurplusAmount =
+                        buyerOrder.getTradeAmount().subtract(tradeTransaction.getTradeCount().multiply(buyerOrder.getTradePrice()));
             }
-
-            buyerSurplusAmount =
-                    buyerSurplusAmount.subtract(tradeTransaction.getTradeCount().multiply(buyerOrder.getTradePrice()));
 
             buyerOrder.setSurplusCount(buyerSurplusCount);
             buyerOrder.setSurplusAmount(buyerSurplusAmount);

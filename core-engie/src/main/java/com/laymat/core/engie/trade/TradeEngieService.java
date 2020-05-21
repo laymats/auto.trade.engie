@@ -12,6 +12,8 @@ import org.springframework.stereotype.Component;
 import java.math.BigDecimal;
 import java.util.*;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
+import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -22,6 +24,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 @Component
 public class TradeEngieService extends BaseEngie implements TradeEngie {
+    private static ThreadPoolExecutor scheduledThreadPoolExecutor = new ScheduledThreadPoolExecutor(999);
     /**
      * 系统运行状态
      */
@@ -181,31 +184,31 @@ public class TradeEngieService extends BaseEngie implements TradeEngie {
             tradeResults[0] = tradeResult;
 
             //更新至数据库
-//            scheduledThreadPoolExecutor.execute(() -> {
-//                var tradeTransaction = new SaveTradeTransaction();
-//                tradeTransaction.setBuyerId(tradeResult.getBuyerId());
-//                tradeTransaction.setSellerId(tradeResult.getSellerId());
-//                tradeTransaction.setTradePrice(tradeResult.getTradePrice());
-//                tradeTransaction.setTradeCount(tradeResult.getTradeCount());
-//                tradeTransaction.setTradeAmount(tradeResult.getTradeAmount());
-//                tradeTransaction.setTradeTime(tradeResult.getTradeTime());
-//                tradeTransaction.setBuyerTradeId(tradeResult.getBuyerTradeId());
-//                tradeTransaction.setSellerTradeId(tradeResult.getSellerTradeId());
+            scheduledThreadPoolExecutor.execute(() -> {
+                var tradeTransaction = new SaveTradeTransaction();
+                tradeTransaction.setBuyerId(tradeResult.getBuyerId());
+                tradeTransaction.setSellerId(tradeResult.getSellerId());
+                tradeTransaction.setTradePrice(tradeResult.getTradePrice());
+                tradeTransaction.setTradeCount(tradeResult.getTradeCount());
+                tradeTransaction.setTradeAmount(tradeResult.getTradeAmount());
+                tradeTransaction.setTradeTime(tradeResult.getTradeTime());
+                tradeTransaction.setBuyerTradeId(tradeResult.getBuyerTradeId());
+                tradeTransaction.setSellerTradeId(tradeResult.getSellerTradeId());
+
+                tradeTransactionService.saveTradeTransaction(tradeTransaction);
+            });
+
+//            var tradeTransaction = new SaveTradeTransaction();
+//            tradeTransaction.setBuyerId(tradeResult.getBuyerId());
+//            tradeTransaction.setSellerId(tradeResult.getSellerId());
+//            tradeTransaction.setTradePrice(tradeResult.getTradePrice());
+//            tradeTransaction.setTradeCount(tradeResult.getTradeCount());
+//            tradeTransaction.setTradeAmount(tradeResult.getTradeAmount());
+//            tradeTransaction.setTradeTime(tradeResult.getTradeTime());
+//            tradeTransaction.setBuyerTradeId(tradeResult.getBuyerTradeId());
+//            tradeTransaction.setSellerTradeId(tradeResult.getSellerTradeId());
 //
-//                tradeTransactionService.saveTradeTransaction(tradeTransaction);
-//            });
-
-            var tradeTransaction = new SaveTradeTransaction();
-            tradeTransaction.setBuyerId(tradeResult.getBuyerId());
-            tradeTransaction.setSellerId(tradeResult.getSellerId());
-            tradeTransaction.setTradePrice(tradeResult.getTradePrice());
-            tradeTransaction.setTradeCount(tradeResult.getTradeCount());
-            tradeTransaction.setTradeAmount(tradeResult.getTradeAmount());
-            tradeTransaction.setTradeTime(tradeResult.getTradeTime());
-            tradeTransaction.setBuyerTradeId(tradeResult.getBuyerTradeId());
-            tradeTransaction.setSellerTradeId(tradeResult.getSellerTradeId());
-
-            tradeTransactionService.saveTradeTransaction(tradeTransaction);
+//            tradeTransactionService.saveTradeTransaction(tradeTransaction);
         }
     }
 
@@ -453,7 +456,8 @@ public class TradeEngieService extends BaseEngie implements TradeEngie {
                 }
             }
         }
-        logger.info("获取新交易请求共{}个，买单{}，卖单{}，累计买单{}，卖单{}", size, buyCount, sellCount, buyerList.size(), sellerList.size());
+        logger.info("获取新交易请求共{}个，买单{}，卖单{}，累计买单{}，卖单{}", size, buyCount, sellCount, buyerList.size(),
+                sellerList.size());
         this.doCancleOrder();
         this.doTradeOrder();
     }
@@ -465,12 +469,15 @@ public class TradeEngieService extends BaseEngie implements TradeEngie {
      */
     LinkedList<TradeOrder> getBuyerList() {
         var tradeOrders = new LinkedList<TradeOrder>();
-        for (var buyer : buyerList) {
-            var tradeOrder = new TradeOrder();
-            tradeOrder.setTradePrice(buyer.getTradePrice());
-            tradeOrder.setTradeCount(buyer.getTradeCount());
-            tradeOrder.setTotalAmount(buyer.getTotalAmount());
-            tradeOrders.add(tradeOrder);
+        var tempList = (LinkedList<TradeOrder>)buyerList.clone();
+        if (tempList != null) {
+            for (var buyer : tempList) {
+                var tradeOrder = new TradeOrder();
+                tradeOrder.setTradePrice(buyer.getTradePrice());
+                tradeOrder.setTradeCount(buyer.getTradeCount());
+                tradeOrder.setTotalAmount(buyer.getTotalAmount());
+                tradeOrders.add(tradeOrder);
+            }
         }
         return tradeOrders;
     }
@@ -482,12 +489,15 @@ public class TradeEngieService extends BaseEngie implements TradeEngie {
      */
     LinkedList<TradeOrder> getSellerList() {
         var tradeOrders = new LinkedList<TradeOrder>();
-        for (var buyer : sellerList) {
-            var tradeOrder = new TradeOrder();
-            tradeOrder.setTradePrice(buyer.getTradePrice());
-            tradeOrder.setTradeCount(buyer.getTradeCount());
-            tradeOrder.setTotalAmount(buyer.getTotalAmount());
-            tradeOrders.add(tradeOrder);
+        var tempList = (LinkedList<TradeOrder>)sellerList.clone();
+        if (tempList != null) {
+            for (var buyer : tempList) {
+                var tradeOrder = new TradeOrder();
+                tradeOrder.setTradePrice(buyer.getTradePrice());
+                tradeOrder.setTradeCount(buyer.getTradeCount());
+                tradeOrder.setTotalAmount(buyer.getTotalAmount());
+                tradeOrders.add(tradeOrder);
+            }
         }
         return tradeOrders;
     }
