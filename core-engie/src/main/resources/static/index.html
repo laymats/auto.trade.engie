@@ -299,10 +299,12 @@
             _this.ws.onopen = function (ev) {
                 console.log('start trade market ...');
             }
+            _this.ws.binaryType = 'arraybuffer';
             _this.ws.onmessage = function (ev) {
-                //console.log('ws message ' + ev.data);
-                if (!JSON.parse(ev.data).status) {
-                    var message = JSON.parse(ev.data);
+                const tradeData = new TextDecoder('utf-8').decode(ev.data);
+                //console.log('ws message ' + tradeData);
+                if (!JSON.parse(tradeData).status) {
+                    var message = JSON.parse(tradeData);
                     if (message.type == 'trade') {
                         _this.tradeData(message.data)
                     }
@@ -328,15 +330,16 @@
                 var trade = res.trades[i];
                 $('#trade_list').append('<tr>' +
                     '<td>' + trade.tradeTime.split(' ')[1] + '</td>' +
-                    '<td>' + trade.tradePrice + '</td>' +
+                    '<td style="color: ' + (trade.isBuyer ? 'green' : 'red') + '">' + trade.tradePrice + '</td>' +
                     '<td>' + trade.tradeCount + '</td>' +
                     '<td>' + trade.tradeAmount + '</td>' +
                     '</tr>');
             }
+            document.title = '$' + res.trades[0].tradePrice;
             for (var i = 0; i < res.buyer.length; i++) {
                 var buyer = res.buyer[i];
                 $('#buyer_list').append('<tr>' +
-                    '<td>' + buyer.tradePrice + '</td>' +
+                    '<td style="color: green">' + buyer.tradePrice + '</td>' +
                     '<td>' + buyer.tradeCount + '</td>' +
                     '<td>' + buyer.totalAmount + '</td>' +
                     '</tr>');
@@ -344,7 +347,7 @@
             for (var i = 0; i < res.seller.length; i++) {
                 var seller = res.seller[i];
                 $('#seller_list').append('<tr>' +
-                    '<td>' + seller.tradePrice + '</td>' +
+                    '<td style="color: red">' + seller.tradePrice + '</td>' +
                     '<td>' + seller.tradeCount + '</td>' +
                     '<td>' + seller.totalAmount + '</td>' +
                     '</tr>');

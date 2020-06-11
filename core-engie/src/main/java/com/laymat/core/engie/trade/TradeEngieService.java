@@ -184,32 +184,33 @@ public class TradeEngieService extends BaseEngie implements TradeEngie {
             tradeResults[0] = tradeResult;
 
             //更新至数据库
-//            scheduledThreadPoolExecutor.execute(() -> {
-//                var tradeTransaction = new SaveTradeTransaction();
-//                tradeTransaction.setIsBuyer(tradeResult.getIsBuyer());
-//                tradeTransaction.setBuyerId(tradeResult.getBuyerId());
-//                tradeTransaction.setSellerId(tradeResult.getSellerId());
-//                tradeTransaction.setTradePrice(tradeResult.getTradePrice());
-//                tradeTransaction.setTradeCount(tradeResult.getTradeCount());
-//                tradeTransaction.setTradeAmount(tradeResult.getTradeAmount());
-//                tradeTransaction.setTradeTime(tradeResult.getTradeTime());
-//                tradeTransaction.setBuyerTradeId(tradeResult.getBuyerTradeId());
-//                tradeTransaction.setSellerTradeId(tradeResult.getSellerTradeId());
+            scheduledThreadPoolExecutor.execute(() -> {
+                var tradeTransaction = new SaveTradeTransaction();
+                tradeTransaction.setIsBuyer(tradeResult.getIsBuyer());
+                tradeTransaction.setBuyerId(tradeResult.getBuyerId());
+                tradeTransaction.setSellerId(tradeResult.getSellerId());
+                tradeTransaction.setTradePrice(tradeResult.getTradePrice());
+                tradeTransaction.setTradeCount(tradeResult.getTradeCount());
+                tradeTransaction.setTradeAmount(tradeResult.getTradeAmount());
+                tradeTransaction.setTradeTime(tradeResult.getTradeTime());
+                tradeTransaction.setBuyerTradeId(tradeResult.getBuyerTradeId());
+                tradeTransaction.setSellerTradeId(tradeResult.getSellerTradeId());
+
+                tradeTransactionService.saveTradeTransaction(tradeTransaction);
+            });
+
+//            var tradeTransaction = new SaveTradeTransaction();
+//            tradeTransaction.setIsBuyer(tradeResult.getIsBuyer());
+//            tradeTransaction.setBuyerId(tradeResult.getBuyerId());
+//            tradeTransaction.setSellerId(tradeResult.getSellerId());
+//            tradeTransaction.setTradePrice(tradeResult.getTradePrice());
+//            tradeTransaction.setTradeCount(tradeResult.getTradeCount());
+//            tradeTransaction.setTradeAmount(tradeResult.getTradeAmount());
+//            tradeTransaction.setTradeTime(tradeResult.getTradeTime());
+//            tradeTransaction.setBuyerTradeId(tradeResult.getBuyerTradeId());
+//            tradeTransaction.setSellerTradeId(tradeResult.getSellerTradeId());
 //
-//                tradeTransactionService.saveTradeTransaction(tradeTransaction);
-//            });
-
-            var tradeTransaction = new SaveTradeTransaction();
-            tradeTransaction.setBuyerId(tradeResult.getBuyerId());
-            tradeTransaction.setSellerId(tradeResult.getSellerId());
-            tradeTransaction.setTradePrice(tradeResult.getTradePrice());
-            tradeTransaction.setTradeCount(tradeResult.getTradeCount());
-            tradeTransaction.setTradeAmount(tradeResult.getTradeAmount());
-            tradeTransaction.setTradeTime(tradeResult.getTradeTime());
-            tradeTransaction.setBuyerTradeId(tradeResult.getBuyerTradeId());
-            tradeTransaction.setSellerTradeId(tradeResult.getSellerTradeId());
-
-            tradeTransactionService.saveTradeTransaction(tradeTransaction);
+//            tradeTransactionService.saveTradeTransaction(tradeTransaction);
         }
     }
 
@@ -273,14 +274,14 @@ public class TradeEngieService extends BaseEngie implements TradeEngie {
         var buyTrade = getHighTradeOrder();
         if (buyTrade == null) {
             TRADE_RUN_STATUS.set(TRADE_WAITING.get());
-            logger.info("撮合完毕.");
+            //logger.info("撮合完毕.");
             return;
         }
 
         var sellTrade = getlowestTradeOrder(buyTrade.getOrder());
         if (sellTrade == null) {
             TRADE_RUN_STATUS.set(TRADE_WAITING.get());
-            logger.info("撮合完毕.");
+            //logger.info("撮合完毕.");
             return;
         }
 
@@ -298,7 +299,7 @@ public class TradeEngieService extends BaseEngie implements TradeEngie {
             tradeCount = sellTrade.getOrder().getTradeCount();
             //最终交易金额
             finalTradeTotalAmount = tradePrice.multiply(tradeCount);
-            logger.info("T1:购买单价{}，购买数量{}，订单总额{}", tradePrice, tradeCount, finalTradeTotalAmount);
+            //logger.info("T1:购买单价{}，购买数量{}，订单总额{}", tradePrice, tradeCount, finalTradeTotalAmount);
 
             this.removeSellOrder(sellTrade.getOrder());
             this.removeBuyOrder(buyTrade.getOrder());
@@ -313,7 +314,7 @@ public class TradeEngieService extends BaseEngie implements TradeEngie {
             var finalTradeCount = buyTrade.getOrder().getTradeCount().subtract(tradeCount);
             //最终交易金额
             finalTradeTotalAmount = tradeCount.multiply(sellTrade.getOrder().getTradePrice());
-            logger.info("T2:购买单价{}，购买数量{}，订单总额{}", tradePrice, tradeCount, finalTradeTotalAmount);
+            //logger.info("T2:购买单价{}，购买数量{}，订单总额{}", tradePrice, tradeCount, finalTradeTotalAmount);
 
             buyTrade.getOrder().setTradeCount(finalTradeCount);
             buyTrade.getOrder().setTotalAmount(buyTrade.getOrder().getTradePrice().multiply(finalTradeCount));
@@ -329,7 +330,7 @@ public class TradeEngieService extends BaseEngie implements TradeEngie {
             var finalTradeCount = sellTrade.getOrder().getTradeCount().subtract(tradeCount);
             //最终交易金额
             finalTradeTotalAmount = tradeCount.multiply(tradePrice);
-            logger.info("T3:购买单价{}，购买数量{}，订单总额{}", tradePrice, tradeCount, finalTradeTotalAmount);
+            //logger.info("T3:购买单价{}，购买数量{}，订单总额{}", tradePrice, tradeCount, finalTradeTotalAmount);
 
             sellTrade.getOrder().setTradeCount(finalTradeCount);
             sellTrade.getOrder().setTotalAmount(sellTrade.getOrder().getTradePrice().multiply(finalTradeCount));
@@ -460,8 +461,6 @@ public class TradeEngieService extends BaseEngie implements TradeEngie {
                 }
             }
         }
-        logger.info("获取新交易请求共{}个，买单{}，卖单{}，累计买单{}，卖单{}", size, buyCount, sellCount, buyerList.size(),
-                sellerList.size());
         this.doCancleOrder();
         this.doTradeOrder();
     }
@@ -619,7 +618,7 @@ public class TradeEngieService extends BaseEngie implements TradeEngie {
             logger.info("核心交易服务已启动.");
             while (true) {
                 try {
-                    TimeUnit.MILLISECONDS.sleep(10);
+                    //TimeUnit.MILLISECONDS.sleep(1);
                     this.makeOrderHandle();
                 } catch (Exception e) {
                     logger.error("TS1:{}", e);
@@ -631,7 +630,7 @@ public class TradeEngieService extends BaseEngie implements TradeEngie {
             logger.info("交易市场信息处理服务已启动.");
             while (true) {
                 try {
-                    TimeUnit.MILLISECONDS.sleep(10);
+                    //TimeUnit.MILLISECONDS.sleep(10);
                     this.makeBuyOrderShow();
                     this.makeSellOrderShow();
                 } catch (Exception e) {
@@ -644,7 +643,7 @@ public class TradeEngieService extends BaseEngie implements TradeEngie {
             logger.info("市场交易信息推送已启动.");
             while (true) {
                 try {
-                    TimeUnit.MILLISECONDS.sleep(300);
+                    TimeUnit.MILLISECONDS.sleep(100);
                     this.makeTradeMarket();
                 } catch (Exception e) {
                     logger.error("TS3:{}", e);

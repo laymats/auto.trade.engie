@@ -15,6 +15,8 @@ import javax.websocket.*;
 import javax.websocket.server.PathParam;
 import javax.websocket.server.ServerEndpoint;
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
+import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.ScheduledExecutorService;
@@ -72,7 +74,7 @@ public class TradeMarketService {
 
         log.info("有新窗口开始监听:{}，当前在线人数为{}", session.getId(), getOnlineCount());
         try {
-            sendMessage("{\"status\":\"success\"}");
+            sendMessage(ByteBuffer.wrap("{\"status\":\"success\"}".getBytes("utf-8")));
         } catch (IOException e) {
             log.error("websocket IO异常:" + e.getMessage());
         }
@@ -126,7 +128,7 @@ public class TradeMarketService {
                         map.put("type", "account");
                         map.put("data", account);
                         map.put("orders", orders);
-                        sendMessage(gson.toJson(map));
+                        sendMessage(ByteBuffer.wrap(gson.toJson(map).getBytes("utf-8")));
                         TimeUnit.MILLISECONDS.sleep(500);
                     } else {
                         break;
@@ -152,10 +154,10 @@ public class TradeMarketService {
     /**
      * 实现服务器主动推送
      */
-    public void sendMessage(String message) throws IOException {
+    public void sendMessage(ByteBuffer buffer) throws IOException {
         try {
             synchronized (this) {
-                this.session.getBasicRemote().sendText(message);
+                this.session.getBasicRemote().sendBinary(buffer);
             }
         } catch (Exception e) {
             log.error("websocket 异常:" + e.getMessage());
@@ -166,13 +168,20 @@ public class TradeMarketService {
      * 群发自定义消息
      */
     public static void sendAllSession(TradeStatus tradeStatus) {
+        var map = new HashMap<>();
+        map.put("type", "trade");
+        map.put("data", tradeStatus);
+        ByteBuffer buffer = null;
+        try {
+            buffer = ByteBuffer.wrap(gson.toJson(map).getBytes("utf-8"));
+        } catch (UnsupportedEncodingException e) {
+            log.error("getBytes 异常 {}", e);
+        }
+
         for (TradeMarketService item : coreTradeMarketServices) {
             try {
                 if (item.session.isOpen()) {
-                    var map = new HashMap<>();
-                    map.put("type", "trade");
-                    map.put("data", tradeStatus);
-                    item.sendMessage(gson.toJson(map));
+                    item.sendMessage(buffer);
                     log.debug("推送对象:{}，推送内容:{}", item.session.getId(), gson.toJson(map));
                 } else {
                     coreTradeMarketServices.remove(item);

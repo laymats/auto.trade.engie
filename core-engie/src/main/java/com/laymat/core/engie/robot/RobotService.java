@@ -97,7 +97,7 @@ public class RobotService {
                     logger.error("Robot 异常2：{}", e.getMessage());
                 }
             }
-            TimeUnit.MILLISECONDS.sleep(500);
+            TimeUnit.MILLISECONDS.sleep(3000);
         }
     }
 }
